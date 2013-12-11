@@ -1,9 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
+-- allow Text objects directly as strings
+--
 -- RASCAL, a Haskell cli reddit client
 
 import Data.Aeson
 import Network.Curl.Aeson
 import Control.Applicative
+import Network.Curl.Opts
+
+version :: [Char]
+version = "1.0"
+
+user_agent :: [Char]
+user_agent = "rascal/" ++ version ++ " by soli"
 
 data Link = Link {
    domain :: String,
@@ -33,8 +42,9 @@ instance FromJSON Listing where
       Listing <$> d_ata .: "children"
    parseJSON _ = empty
 
-
+-- ensure no burst above 30 requests/min
 main ::  IO ()
 main = do
-   t <- curlAesonGet "http://www.reddit.com/r/scrolls/new.json" :: IO Listing
+   t <- curlAeson parseJSON "GET" "http://www.reddit.com/r/scrolls/new.json"
+      [CurlUserAgent user_agent] noData :: IO Listing
    print t
