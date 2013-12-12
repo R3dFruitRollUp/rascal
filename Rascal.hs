@@ -9,6 +9,8 @@
 
 import Control.Applicative
 import Data.Version
+import Text.Printf
+import System.Process
 
 import Data.Aeson
 import Network.Curl.Aeson
@@ -27,9 +29,9 @@ data Link = Link {
    url :: String,
    created :: Int,
    numComments :: Int
-} deriving(Show)
+}
 
-data Listing = Listing [Link] deriving (Show)
+data Listing = Listing [Link]
 
 instance FromJSON Link where
    parseJSON (Object o) = do
@@ -43,15 +45,29 @@ instance FromJSON Link where
            <*> datum .: "num_comments"
    parseJSON _ = empty
 
+-- we do not use Show because we depend on an IO generated width
+showLink :: Link -> Int -> String
+showLink l width =
+   let titlewidth = width - 29
+       self = if isSelf l then '♦' else ' ' in
+      let format = printf " %%3d%%c %%-%d.%ds  %%20.20s " titlewidth titlewidth in
+         printf format (score l) self (title l) (author l)
+
 instance FromJSON Listing where
    parseJSON (Object o) = do
       datum <- o .: "data"
       Listing <$> datum .: "children"
    parseJSON _ = empty
 
+showListing :: Listing -> Int -> String
+showListing (Listing l) width =
+   unlines (map (`showLink` width) l)
+
 -- ensure no burst above 30 requests/min
 main ::  IO ()
 main = do
+   columns <- readProcess "tput" ["cols"] []
    t <- curlAeson parseJSON "GET" "http://www.reddit.com/r/scrolls/new.json"
       [CurlUserAgent userAgent] noData :: IO Listing
-   print t
+   let width = read columns in
+      putStr $ showListing t width
