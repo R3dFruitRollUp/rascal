@@ -1,7 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
--- allow Text objects directly as strings
 --
 -- RASCAL, a Haskell cli reddit client
+-- Copyright (c) 2013 Sylvain Soliman <Sylvain.Soliman@gmail.com>
+-- MIT License, see LICENSE.txt
+--
+
+{-# LANGUAGE OverloadedStrings #-}
+-- allow Text objects directly as strings
 
 import Data.Aeson
 import Network.Curl.Aeson
@@ -27,19 +31,19 @@ data Listing = Listing [Link] deriving (Show)
 
 instance FromJSON Link where
    parseJSON (Object o) = do
-      d_ata <- o .: "data"
-      Link <$> d_ata .: "domain"
-           <*> d_ata .: "author"
-           <*> d_ata .: "score"
-           <*> d_ata .: "url"
-           <*> d_ata .: "title"
-           <*> d_ata .: "num_comments"
+      datum <- o .: "data"
+      Link <$> datum .: "domain"
+           <*> datum .: "author"
+           <*> datum .: "score"
+           <*> datum .: "url"
+           <*> datum .: "title"
+           <*> datum .: "num_comments"
    parseJSON _ = empty
 
 instance FromJSON Listing where
    parseJSON (Object o) = do
-      d_ata <- o .: "data"
-      Listing <$> d_ata .: "children"
+      datum <- o .: "data"
+      Listing <$> datum .: "children"
    parseJSON _ = empty
 
 -- ensure no burst above 30 requests/min
