@@ -15,6 +15,7 @@ import System.Process
 import Data.Aeson
 import Network.Curl.Aeson
 import Network.Curl.Opts
+import System.Environment
 
 import Paths_rascal
 
@@ -72,11 +73,16 @@ unescape ('&':'l':'t':';':xs) = '<':xs
 unescape ('&':'g':'t':';':xs) = '>':xs
 unescape (x:xs) = x:unescape xs
 
+getNew :: String -> IO Listing
+getNew subreddit =
+   curlAeson parseJSON "GET" ("http://www.reddit.com/r/" ++ subreddit ++ "/new.json")
+      [CurlUserAgent userAgent] noData
+
 -- ensure no burst above 30 requests/min
 main ::  IO ()
 main = do
+   args <- getArgs
    columns <- readProcess "tput" ["cols"] []
-   t <- curlAeson parseJSON "GET" "http://www.reddit.com/r/scrolls/new.json"
-      [CurlUserAgent userAgent] noData :: IO Listing
+   listing <- getNew $ if length args == 1 then head args else "scrolls"
    let width = read columns in
-      putStr $ showListing t width
+      putStr $ showListing listing width
