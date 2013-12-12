@@ -8,16 +8,16 @@
 -- allow Text objects directly as strings
 
 import Control.Applicative
+import Data.Version
 
 import Data.Aeson
 import Network.Curl.Aeson
 import Network.Curl.Opts
 
-version :: String
-version = "1.0"
+import Paths_rascal
 
 userAgent :: String
-userAgent = "rascal/" ++ version ++ " by soli"
+userAgent = "rascal/" ++ showVersion version ++ " by soli"
 
 data Link = Link {
    title :: String,
