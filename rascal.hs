@@ -7,9 +7,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- allow Text objects directly as strings
 
+import Control.Applicative
+
 import Data.Aeson
 import Network.Curl.Aeson
-import Control.Applicative
 import Network.Curl.Opts
 
 version :: [Char]

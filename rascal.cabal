@@ -1,0 +1,48 @@
+name:                rascal
+
+-- The package version.  See the Haskell package versioning policy (PVP) 
+-- for standards guiding when and how versions should be incremented.
+-- http://www.haskell.org/haskellwiki/Package_versioning_policy
+-- PVP summary:      +-+------- breaking API changes
+--                   | | +----- non-breaking API additions
+--                   | | | +--- code changes with no API change
+version:             0.1.0.0
+synopsis:            A command-line client for Reddit
+
+-- A longer description of the package.
+-- description:         
+
+-- The license under which the package is released.
+license:             MIT
+license-file:        LICENSE
+author:              Sylvain Soliman
+
+-- An email address to which users can send suggestions, bug reports, and 
+-- patches.
+maintainer:          Sylvain.Soliman@gmail.com
+category:            Web
+build-type:          Simple
+
+-- Extra files to be distributed with the package, such as examples or a 
+-- README.
+-- extra-source-files:  
+
+-- Constraint on the version of Cabal needed to build this package.
+cabal-version:       >=1.10
+
+
+executable rascal
+  -- .hs or .lhs file containing the Main module.
+  -- main-is:             
+  
+  -- Modules included in this executable, other than Main.
+  -- other-modules:       
+  
+  build-depends:       base >=4.6 && <4.7, curl-aeson, curl, aeson
+  
+  -- Directories containing source files.
+  -- hs-source-dirs:      
+  
+  -- Base language which the package is written in.
+  default-language:    Haskell2010
+  
