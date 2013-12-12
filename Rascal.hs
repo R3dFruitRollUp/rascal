@@ -1,7 +1,7 @@
 --
 -- RASCAL, a Haskell cli reddit client
 -- Copyright (c) 2013 Sylvain Soliman <Sylvain.Soliman@gmail.com>
--- MIT License, see LICENSE.txt
+-- MIT License, see LICENSE
 --
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -20,11 +20,12 @@ userAgent :: String
 userAgent = "rascal/" ++ version ++ " by soli"
 
 data Link = Link {
-   domain :: String,
+   title :: String,
    author :: String,
    score :: Int,
+   isSelf :: Bool,
    url :: String,
-   title :: String,
+   created :: Int,
    numComments :: Int
 } deriving(Show)
 
@@ -33,12 +34,13 @@ data Listing = Listing [Link] deriving (Show)
 instance FromJSON Link where
    parseJSON (Object o) = do
       datum <- o .: "data"
-      Link <$> datum .: "domain"
+      Link <$> datum .: "title"
            <*> datum .: "author"
            <*> datum .: "score"
+           <*> datum .: "is_self"
            <*> datum .: "url"
-           <*> datum .: "title"
-           <*> datum .: "numComments"
+           <*> datum .: "created_utc"
+           <*> datum .: "num_comments"
    parseJSON _ = empty
 
 instance FromJSON Listing where
