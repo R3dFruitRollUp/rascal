@@ -32,8 +32,7 @@ cabal-version:       >=1.10
 
 
 executable rascal
-  -- .hs or .lhs file containing the Main module.
-  -- main-is:             
+  main-is: Rascal.hs
   
   -- Modules included in this executable, other than Main.
   -- other-modules:       
