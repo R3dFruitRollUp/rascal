@@ -13,11 +13,11 @@ import Data.Aeson
 import Network.Curl.Aeson
 import Network.Curl.Opts
 
-version :: [Char]
+version :: String
 version = "1.0"
 
-user_agent :: [Char]
-user_agent = "rascal/" ++ version ++ " by soli"
+userAgent :: String
+userAgent = "rascal/" ++ version ++ " by soli"
 
 data Link = Link {
    domain :: String,
@@ -25,7 +25,7 @@ data Link = Link {
    score :: Int,
    url :: String,
    title :: String,
-   num_comments :: Int
+   numComments :: Int
 } deriving(Show)
 
 data Listing = Listing [Link] deriving (Show)
@@ -38,7 +38,7 @@ instance FromJSON Link where
            <*> datum .: "score"
            <*> datum .: "url"
            <*> datum .: "title"
-           <*> datum .: "num_comments"
+           <*> datum .: "numComments"
    parseJSON _ = empty
 
 instance FromJSON Listing where
@@ -51,5 +51,5 @@ instance FromJSON Listing where
 main ::  IO ()
 main = do
    t <- curlAeson parseJSON "GET" "http://www.reddit.com/r/scrolls/new.json"
-      [CurlUserAgent user_agent] noData :: IO Listing
+      [CurlUserAgent userAgent] noData :: IO Listing
    print t
