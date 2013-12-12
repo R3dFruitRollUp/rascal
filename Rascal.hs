@@ -36,8 +36,9 @@ data Listing = Listing [Link]
 instance FromJSON Link where
    parseJSON (Object o) = do
       datum <- o .: "data"
-      Link <$> datum .: "title"
-           <*> datum .: "author"
+      etitle <- datum .: "title"
+      Link (unescape etitle)
+           <$> datum .: "author"
            <*> datum .: "score"
            <*> datum .: "is_self"
            <*> datum .: "url"
@@ -48,10 +49,10 @@ instance FromJSON Link where
 -- we do not use Show because we depend on an IO generated width
 showLink :: Link -> Int -> String
 showLink l width =
-   let titlewidth = width - 29
+   let titlewidth = width - 34
        self = if isSelf l then '♦' else ' ' in
-      let format = printf " %%3d%%c %%-%d.%ds  %%20.20s " titlewidth titlewidth in
-         printf format (score l) self (title l) (author l)
+      let format = printf " %%3d%%c %%-%d.%ds  %%20.20s  %%3d " titlewidth titlewidth in
+         printf format (score l) self (title l) (author l) (numComments l)
 
 instance FromJSON Listing where
    parseJSON (Object o) = do
@@ -62,6 +63,14 @@ instance FromJSON Listing where
 showListing :: Listing -> Int -> String
 showListing (Listing l) width =
    unlines (map (`showLink` width) l)
+
+-- |Poor man's HTML entities unescaping
+unescape :: String -> String
+unescape [] = []
+unescape ('&':'a':'m':'p':';':xs) = '&':xs
+unescape ('&':'l':'t':';':xs) = '<':xs
+unescape ('&':'g':'t':';':xs) = '>':xs
+unescape (x:xs) = x:unescape xs
 
 -- ensure no burst above 30 requests/min
 main ::  IO ()
