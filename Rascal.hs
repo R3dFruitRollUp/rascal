@@ -27,15 +27,15 @@ data Link = Link {
    author :: String,
    score :: Int,
    isSelf :: Bool,
-   url :: String,
-   created :: Int,
+   -- url :: String,
+   -- created :: Int,
    numComments :: Int
 }
 
 newtype Listing = Listing [Link]
 
 data NamedListing = NamedListing {
-   subreddit :: String,
+   name :: String,
    listing :: Listing
 }
 
@@ -47,8 +47,8 @@ instance FromJSON Link where
            <$> datum .: "author"
            <*> datum .: "score"
            <*> datum .: "is_self"
-           <*> datum .: "url"
-           <*> datum .: "created_utc"
+           -- <*> datum .: "url"
+           -- <*> datum .: "created_utc"
            <*> datum .: "num_comments"
    parseJSON _ = empty
 
@@ -69,7 +69,7 @@ instance FromJSON Listing where
 showListing :: NamedListing -> Int -> String
 showListing l width =
    let (Listing links) = listing l in
-      "/r/" ++ subreddit l ++ "\n\n" ++ unlines (map (`showLink` width) links)
+      "/r/" ++ name l ++ "\n\n" ++ unlines (map (`showLink` width) links)
 
 -- |Poor man's HTML entities unescaping
 unescape :: String -> String
@@ -80,10 +80,10 @@ unescape ('&':'g':'t':';':xs) = '>':xs
 unescape (x:xs) = x:unescape xs
 
 getNew :: String -> IO NamedListing
-getNew reddit = do
-   l <- curlAeson parseJSON "GET" ("http://www.reddit.com/r/" ++ reddit ++ "/new.json")
+getNew subreddit = do
+   l <- curlAeson parseJSON "GET" ("http://www.subreddit.com/r/" ++ subreddit ++ "/new.json")
       [CurlUserAgent userAgent] noData
-   return $ NamedListing reddit l
+   return $ NamedListing (subreddit ++ " -- new") l
 
 -- ensure no burst above 30 requests/min
 main ::  IO ()
