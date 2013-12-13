@@ -92,7 +92,7 @@ getNew subreddit = do
 -- hot.json
 
 -- GET comments
--- r/subreddit/comments/article_id.json?context=0&sort=(new|hot)
+-- r/subreddit/comments/article_id36.json?context=0&sort=(new|hot)
 
 -- GET search
 -- r/subreddit/search.json?syntax=plain&q=&sort=
