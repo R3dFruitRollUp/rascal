@@ -32,7 +32,12 @@ data Link = Link {
    numComments :: Int
 }
 
-data Listing = Listing [Link]
+newtype Listing = Listing [Link]
+
+data NamedListing = NamedListing {
+   subreddit :: String,
+   listing :: Listing
+}
 
 instance FromJSON Link where
    parseJSON (Object o) = do
@@ -61,9 +66,10 @@ instance FromJSON Listing where
       Listing <$> datum .: "children"
    parseJSON _ = empty
 
-showListing :: Listing -> Int -> String
-showListing (Listing l) width =
-   unlines (map (`showLink` width) l)
+showListing :: NamedListing -> Int -> String
+showListing l width =
+   let (Listing links) = listing l in
+      "/r/" ++ subreddit l ++ "\n\n" ++ unlines (map (`showLink` width) links)
 
 -- |Poor man's HTML entities unescaping
 unescape :: String -> String
@@ -73,16 +79,17 @@ unescape ('&':'l':'t':';':xs) = '<':xs
 unescape ('&':'g':'t':';':xs) = '>':xs
 unescape (x:xs) = x:unescape xs
 
-getNew :: String -> IO Listing
-getNew subreddit =
-   curlAeson parseJSON "GET" ("http://www.reddit.com/r/" ++ subreddit ++ "/new.json")
+getNew :: String -> IO NamedListing
+getNew reddit = do
+   l <- curlAeson parseJSON "GET" ("http://www.reddit.com/r/" ++ reddit ++ "/new.json")
       [CurlUserAgent userAgent] noData
+   return $ NamedListing reddit l
 
 -- ensure no burst above 30 requests/min
 main ::  IO ()
 main = do
    args <- getArgs
    columns <- readProcess "tput" ["cols"] []
-   listing <- getNew $ if length args == 1 then head args else "scrolls"
+   list <- getNew $ if length args == 1 then head args else "scrolls"
    let width = read columns in
-      putStr $ showListing listing width
+      putStr $ showListing list width
