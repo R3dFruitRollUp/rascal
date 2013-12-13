@@ -29,6 +29,7 @@ data Link = Link {
    isSelf :: Bool,
    -- url :: String,
    -- created :: Int,
+   -- uid :: String,
    numComments :: Int
 }
 
@@ -49,6 +50,7 @@ instance FromJSON Link where
            <*> datum .: "is_self"
            -- <*> datum .: "url"
            -- <*> datum .: "created_utc"
+           -- <*> datum .: "name"
            <*> datum .: "num_comments"
    parseJSON _ = empty
 
@@ -71,7 +73,7 @@ showListing l width =
    let (Listing links) = listing l in
       "/r/" ++ name l ++ "\n\n" ++ unlines (map (`showLink` width) links)
 
--- |Poor man's HTML entities unescaping
+-- Poor man's HTML entities unescaping
 unescape :: String -> String
 unescape [] = []
 unescape ('&':'a':'m':'p':';':xs) = '&':xs
@@ -79,11 +81,39 @@ unescape ('&':'l':'t':';':xs) = '<':xs
 unescape ('&':'g':'t':';':xs) = '>':xs
 unescape (x:xs) = x:unescape xs
 
+-- get new posts in argument's subreddit as a listing
 getNew :: String -> IO NamedListing
 getNew subreddit = do
-   l <- curlAeson parseJSON "GET" ("http://www.subreddit.com/r/" ++ subreddit ++ "/new.json")
+   l <- curlAeson parseJSON "GET" ("http://www.reddit.com/r/" ++ subreddit ++ "/new.json")
       [CurlUserAgent userAgent] noData
    return $ NamedListing (subreddit ++ " -- new") l
+
+-- GET hot
+-- hot.json
+
+-- GET comments
+-- r/subreddit/comments/article_id.json?context=0&sort=(new|hot)
+
+-- GET search
+-- r/subreddit/search.json?syntax=plain&q=&sort=
+
+-- GET subscribed
+-- subreddits/mine/subscriber.json
+
+-- POST login
+-- https://ssl.reddit.com/api/login?api_type=json&user=&passwd=&rem=true
+
+-- POST comment
+-- api/comment?api_type=json&text=&thing=&uh=
+
+-- POST save
+-- api/(un)save?id=&uh=
+
+-- POST submit
+-- ...
+
+-- POST vote
+-- api/vote?id=&dir=&uh= (dir -1, 0, 1)
 
 -- ensure no burst above 30 requests/min
 main ::  IO ()
