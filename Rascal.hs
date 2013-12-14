@@ -9,14 +9,14 @@
 
 import Control.Applicative
 import Data.Version
-import Data.Char
 import Text.Printf
-import System.Process
+import System.Environment
+import System.Info
 
 import Data.Aeson
 import Network.Curl.Aeson
 import Network.Curl.Opts
-import System.Environment
+import System.Process
 
 import Paths_rascal
 
@@ -28,7 +28,7 @@ data Link = Link {
    author :: String,
    score :: Int,
    isSelf :: Bool,
-   -- url :: String,
+   link :: String,
    -- created :: Int,
    -- uid :: String,
    numComments :: Int
@@ -49,7 +49,7 @@ instance FromJSON Link where
            <$> datum .: "author"
            <*> datum .: "score"
            <*> datum .: "is_self"
-           -- <*> datum .: "url"
+           <*> datum .: "url"
            -- <*> datum .: "created_utc"
            -- <*> datum .: "name"
            <*> datum .: "num_comments"
@@ -110,6 +110,19 @@ getListing select subreddit = do
       curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
    return $ NamedListing (subreddit ++ " -- " ++ select) l
 
+-- |open nth link in a listing
+open :: Listing -> Int -> IO ()
+open (Listing l) n =
+   let u = link (l !! n) in do
+      putStrLn $ "opening " ++ u ++ "…"
+      openUrl u
+
+-- |open an url in a platform independent way
+openUrl :: String -> IO ()
+openUrl u = case os of
+    "darwin"  -> callProcess "open" [u]
+    "linux"   -> callProcess "xdg-open" [u, "&"] -- getEnv BROWSER ???
+    "windows" -> callProcess "start" ["", u]
 
 -- GET comments
 -- r/subreddit/comments/article_id36.json?context=0&sort=(new|hot)
@@ -135,7 +148,6 @@ getListing select subreddit = do
 -- POST vote
 -- api/vote?id=&dir=&uh= (dir -1, 0, 1)
 
--- ensure no burst above 30 requests/min
 main ::  IO ()
 main = do
    args <- getArgs
@@ -144,6 +156,7 @@ main = do
    let width = read columns in
       loop list width
 
+-- |main event loop
 loop :: NamedListing -> Int -> IO ()
 loop l w = do
    putStrLn $ showListing l w
@@ -156,8 +169,7 @@ loop l w = do
       'h':_ -> do
          list <- getHot $ takeWhile (/=' ') $ name l
          loop list w
-      n@(x:_) | isDigit x -> do
-         putStrLn n
+      n@(x:_) | x `elem` ['1'..'9'] -> do
+         open (listing l) $ read n - 1    -- TODO handle failure/use reads
          loop l w
       _ -> return ()
-
