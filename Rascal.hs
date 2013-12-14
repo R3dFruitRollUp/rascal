@@ -31,7 +31,8 @@ data Link = Link {
    link :: String,
    -- created :: Int,
    -- uid :: String,
-   numComments :: Int
+   numComments :: Int,
+   selfText :: String
 }
 
 newtype Listing = Listing [Link]
@@ -53,6 +54,7 @@ instance FromJSON Link where
            -- <*> datum .: "created_utc"
            -- <*> datum .: "name"
            <*> datum .: "num_comments"
+           <*> datum .: "selftext"
    parseJSON _ = empty
 
 -- we do not use Show because we depend on an IO generated width
@@ -82,7 +84,7 @@ numberLines l =
 showListing :: NamedListing -> Int -> String
 showListing l width =
    let (Listing links) = listing l in
-      "--=| /r/" ++ name l ++ " |=--\n\n" ++
+      "\n--=| /r/" ++ name l ++ " |=--\n\n" ++
       -- the -5 comes from numberLines
       numberLines (map (`showLink` (width - 5)) links)
 
@@ -103,6 +105,7 @@ getHot :: String -> IO NamedListing
 getHot = getListing "hot"
 
 -- |get posts according to selection in argument's subreddit as a listing
+-- FIXME handle gracefully curl exceptions
 getListing :: String -> String -> IO NamedListing
 getListing select subreddit = do
    l <- let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
@@ -110,12 +113,29 @@ getListing select subreddit = do
       curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
    return $ NamedListing (subreddit ++ " -- " ++ select) l
 
--- |open nth link in a listing
-open :: Listing -> Int -> IO ()
-open (Listing l) n =
-   let u = link (l !! n) in do
-      putStrLn $ "opening " ++ u ++ "…"
-      openUrl u
+-- |open nth link in a listing in given width
+open :: Listing -> Int -> Int -> IO ()
+open (Listing l) n w =
+   let ln = (l !! n) in
+      if isSelf ln
+      then do
+         message "" w
+         putStrLn $ selfText ln
+         message "press a key to continue" w
+         getChar
+         return ()
+      else let u = link (l !! n) in do
+         message ("opening '" ++ u ++ "'…") w
+         openUrl u
+
+-- |display an informative message
+message :: String -> Int -> IO ()
+message s w =
+   let msg = if null s then "" else "--[" ++ s ++ "]"
+       l = length msg in do
+      putStrLn ""
+      putStr msg
+      putStrLn $ replicate (w - l) '-'
 
 -- |open an url in a platform independent way
 openUrl :: String -> IO ()
@@ -170,6 +190,6 @@ loop l w = do
          list <- getHot $ takeWhile (/=' ') $ name l
          loop list w
       n@(x:_) | x `elem` ['1'..'9'] -> do
-         open (listing l) $ read n - 1    -- TODO handle failure/use reads
+         open (listing l) (read n - 1) w     -- TODO handle failure/use reads
          loop l w
       _ -> return ()
