@@ -5,10 +5,11 @@
 --
 
 {-# LANGUAGE OverloadedStrings #-}
--- allow Text objects directly as strings
+-- allow Text objects directly as strings, used for JSON parsing
 
 import Control.Applicative
 import Data.Version
+import Data.Char
 import Text.Printf
 import System.Process
 
@@ -81,7 +82,7 @@ numberLines l =
 showListing :: NamedListing -> Int -> String
 showListing l width =
    let (Listing links) = listing l in
-      "/r/" ++ name l ++ "\n\n" ++
+      "--=| /r/" ++ name l ++ " |=--\n\n" ++
       -- the -5 comes from numberLines
       numberLines (map (`showLink` (width - 5)) links)
 
@@ -145,7 +146,8 @@ main = do
 
 loop :: NamedListing -> Int -> IO ()
 loop l w = do
-   putStr $ showListing l w
+   putStrLn $ showListing l w
+   putStrLn "[n]ew/[h]ot/open [#]"
    cmd <- getLine
    case cmd of
       'n':_ -> do
@@ -154,5 +156,8 @@ loop l w = do
       'h':_ -> do
          list <- getHot $ takeWhile (/=' ') $ name l
          loop list w
+      n@(x:_) | isDigit x -> do
+         putStrLn n
+         loop l w
       _ -> return ()
 
