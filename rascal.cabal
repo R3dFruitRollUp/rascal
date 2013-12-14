@@ -6,7 +6,7 @@ name:                rascal
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             1.0.2
+version:             1.0.3
 synopsis:            A command-line client for Reddit
 
 -- A longer description of the package.
@@ -37,7 +37,8 @@ executable rascal
   -- Modules included in this executable, other than Main.
   other-modules:     Paths_rascal
   
-  build-depends:     base >=4.6 && <4.7, curl-aeson, curl, aeson, process >= 1.2
+  build-depends:     base >=4.6 && <4.7, curl-aeson, curl, aeson,
+                     process >= 1.2, ansi-terminal
   
   -- Directories containing source files.
   -- hs-source-dirs:      

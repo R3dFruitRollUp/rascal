@@ -17,11 +17,27 @@ import Data.Aeson
 import Network.Curl.Aeson
 import Network.Curl.Opts
 import System.Process
+import System.Console.ANSI
 
 import Paths_rascal
 
 userAgent :: String
 userAgent = "rascal/" ++ showVersion version ++ " by soli"
+
+white :: String
+white = setSGRCode [SetColor Foreground Vivid White]
+cyan :: String
+cyan  = setSGRCode [SetColor Foreground Dull Cyan]
+yellow :: String
+yellow  = setSGRCode [SetColor Foreground Dull Yellow]
+blue :: String
+blue  = setSGRCode [SetColor Foreground Dull Blue]
+magenta :: String
+magenta  = setSGRCode [SetColor Foreground Dull Magenta]
+red :: String
+red  = setSGRCode [SetColor Foreground Dull Red]
+reset :: String
+reset = setSGRCode [Reset]
 
 data Link = Link {
    title :: String,
@@ -61,9 +77,14 @@ instance FromJSON Link where
 showLink :: Link -> Int -> String
 showLink l width =
    let titlewidth = width - 34
-       self = if isSelf l then '♦' else ' ' in
-      let format = printf " %%3d%%c %%-%d.%ds  %%20.20s  %%3d " titlewidth titlewidth in
-         printf format (score l) self (title l) (author l) (numComments l)
+       self = if isSelf l
+              then yellow ++ "♦"
+              else " "
+       color = if score l == 0
+               then blue
+               else red in
+      let format = printf " %%s%%3d%%s%%s %%-%d.%ds  %%20.20s  %%s%%3d%%s " titlewidth titlewidth in
+         printf format color (score l) self reset (title l) (author l) magenta (numComments l) reset
 
 instance FromJSON Listing where
    parseJSON (Object o) = do
@@ -84,7 +105,7 @@ numberLines l =
 showListing :: NamedListing -> Int -> String
 showListing l width =
    let (Listing links) = listing l in
-      "\n--=| /r/" ++ name l ++ " |=--\n\n" ++
+      white ++ "\n--=| /r/" ++ name l ++ " |=--\n\n" ++ reset ++
       -- the -5 comes from numberLines
       numberLines (map (`showLink` (width - 5)) links)
 
@@ -131,8 +152,11 @@ open (Listing l) n w =
 -- |display an informative message
 message :: String -> Int -> IO ()
 message s w =
-   let msg = if null s then "" else "--[" ++ s ++ "]"
-       l = length msg in do
+   let col = cyan ++ reset
+       msg = if null s
+             then col
+             else "--[" ++ cyan ++ s ++ reset ++ "]"
+       l = length msg - length col in do
       putStrLn ""
       putStr msg
       putStrLn $ replicate (w - l) '-'
@@ -180,7 +204,7 @@ main = do
 loop :: NamedListing -> Int -> IO ()
 loop l w = do
    putStrLn $ showListing l w
-   putStrLn "[n]ew/[h]ot/open [#]"
+   message "⟨n⟩ew/⟨h⟩ot/open ⟨#⟩" w
    cmd <- getLine
    case cmd of
       'n':_ -> do
