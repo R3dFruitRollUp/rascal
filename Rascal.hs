@@ -68,10 +68,22 @@ instance FromJSON Listing where
       Listing <$> datum .: "children"
    parseJSON _ = empty
 
+-- | prepend formatted int before a string
+addNumber :: Int -> String -> String
+addNumber =
+   printf " %2d |%s"
+
+-- add number and separate by newlines
+numberLines :: [String] -> String
+numberLines l =
+   unlines $ zipWith addNumber [1..] l
+
 showListing :: NamedListing -> Int -> String
 showListing l width =
    let (Listing links) = listing l in
-      "/r/" ++ name l ++ "\n\n" ++ unlines (map (`showLink` width) links)
+      "/r/" ++ name l ++ "\n\n" ++
+      -- the -5 comes from numberLines
+      numberLines (map (`showLink` (width - 5)) links)
 
 -- Poor man's HTML entities unescaping
 unescape :: String -> String
@@ -81,15 +93,22 @@ unescape ('&':'l':'t':';':xs) = '<':xs
 unescape ('&':'g':'t':';':xs) = '>':xs
 unescape (x:xs) = x:unescape xs
 
--- get new posts in argument's subreddit as a listing
+-- |get new posts in argument's subreddit as a listing
 getNew :: String -> IO NamedListing
-getNew subreddit = do
-   l <- curlAeson parseJSON "GET" ("http://www.reddit.com/r/" ++ subreddit ++ "/new.json")
-      [CurlUserAgent userAgent] noData
-   return $ NamedListing (subreddit ++ " -- new") l
+getNew = getListing "new"
 
--- GET hot
--- hot.json
+-- |get top posts in argument's subreddit as a listing
+getHot :: String -> IO NamedListing
+getHot = getListing "hot"
+
+-- |get posts according to selection in argument's subreddit as a listing
+getListing :: String -> String -> IO NamedListing
+getListing select subreddit = do
+   l <- let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
+                     "/" ++ select ++ ".json" in
+      curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
+   return $ NamedListing (subreddit ++ " -- " ++ select) l
+
 
 -- GET comments
 -- r/subreddit/comments/article_id36.json?context=0&sort=(new|hot)
@@ -122,4 +141,18 @@ main = do
    columns <- readProcess "tput" ["cols"] []
    list <- getNew $ if length args == 1 then head args else "scrolls"
    let width = read columns in
-      putStr $ showListing list width
+      loop list width
+
+loop :: NamedListing -> Int -> IO ()
+loop l w = do
+   putStr $ showListing l w
+   cmd <- getLine
+   case cmd of
+      'n':_ -> do
+         list <- getNew $ takeWhile (/=' ') $ name l
+         loop list w
+      'h':_ -> do
+         list <- getHot $ takeWhile (/=' ') $ name l
+         loop list w
+      _ -> return ()
+
