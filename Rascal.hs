@@ -64,6 +64,7 @@ data NamedListing = NamedListing {
    listing :: Listing
 }
 
+-- |json parser for 'Link'
 instance FromJSON Link where
    parseJSON (Object o) = do
       datum <- o .: "data"
@@ -90,9 +91,12 @@ showLink l width =
        color = if score l == 0
                then blue
                else red in
-      let format = printf " %%s%%3d%%s%%s %%-%d.%ds  %%20.20s  %%s%%3d%%s " titlewidth titlewidth in
-         printf format color (score l) self reset (title l) (author l) magenta (numComments l) reset
+      let format = printf " %%s%%3d%%s%%s %%-%d.%ds  %%20.20s  %%s%%3d%%s "
+                   titlewidth titlewidth in
+         printf format color (score l) self reset (title l) (author l)
+                magenta (numComments l) reset
 
+-- |json parser for 'Listing'
 instance FromJSON Listing where
    parseJSON (Object o) = do
       datum <- o .: "data"
