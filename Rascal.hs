@@ -7,17 +7,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- allow Text objects directly as strings, used for JSON parsing
 
-import Control.Applicative
+import Control.Applicative (empty, (<$>), (<*>))
 import Data.Version        (showVersion)
 import Text.Printf         (printf)
 import System.Environment  (getArgs)
 import System.Info         (os)
 import Data.Char           (ord)
 
-import Data.Aeson
-import Network.Curl.Aeson
-import Network.Curl.Opts
-import System.Process
+import Data.Aeson          (parseJSON, FromJSON, Value(Object), (.:))
+import Network.Curl.Aeson  (curlAeson, noData)
+import Network.Curl.Opts   (CurlOption(CurlUserAgent))
+import System.Process      (callProcess, readProcess)
 import System.Console.ANSI
 
 import Paths_rascal        (version)
