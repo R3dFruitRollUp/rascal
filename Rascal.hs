@@ -14,6 +14,7 @@ import Text.Printf         (printf)
 import System.Environment  (getArgs)
 import System.Info         (os)
 import Data.Char           (ord)
+import Data.Maybe          (isJust)
 import System.IO
 import Control.Exception   (catch)
 
@@ -25,9 +26,11 @@ import System.Console.ANSI
 
 import Paths_rascal        (version)
 
+-- |user_agent for cURL built with version string
 userAgent :: String
 userAgent = "rascal/" ++ showVersion version ++ " by soli"
 
+-- |colors and more
 red :: String
 red  = setSGRCode [SetColor Foreground Dull Red]
 green :: String
@@ -44,6 +47,14 @@ reset :: String
 reset = setSGRCode [Reset]
 bold :: String
 bold = setSGRCode [SetConsoleIntensity BoldIntensity]
+
+-- |available sort options
+availableSorts :: [(Char, String)]
+availableSorts = [
+   ('n', "new"),
+   ('h', "hot"),
+   ('t', "top"),
+   ('c', "controversial")]
 
 data Link = Link {
    title :: String,
@@ -116,10 +127,11 @@ showListing l width =
       -- the -4 comes from numberLines
       numberLines (map (`showLink` (width - 4)) links)
 
+-- |print a listing on screen and ask for a command
 displayListing :: NamedListing -> Int -> IO ()
 displayListing l w = do
    putStrLn $ showListing l w
-   message "⟨n⟩ew/⟨h⟩ot/open ⟨#⟩" w
+   displayCommands w
 
 -- Poor man's HTML entities unescaping
 unescape :: String -> String
@@ -128,14 +140,6 @@ unescape ('&':'a':'m':'p':';':xs) = '&':xs
 unescape ('&':'l':'t':';':xs) = '<':xs
 unescape ('&':'g':'t':';':xs) = '>':xs
 unescape (x:xs) = x:unescape xs
-
--- |get new posts in argument's subreddit as a listing
-getNew :: String -> IO NamedListing
-getNew = getListing "new"
-
--- |get top posts in argument's subreddit as a listing
-getHot :: String -> IO NamedListing
-getHot = getListing "hot"
 
 -- |get posts according to selection in argument's subreddit as a listing
 getListing :: String -> String -> IO NamedListing
@@ -259,9 +263,23 @@ main = do
    hSetBuffering stdin NoBuffering
    args <- getArgs
    columns <- readProcess "tput" ["cols"] []
-   list <- getNew $ if length args == 1 then head args else "scrolls"
+   list <- getListing "new" $ if length args == 1 then head args else "scrolls"
    let width = read columns in
       displayListing list width >> loop list width
+
+-- |show possible commands
+displayCommands :: Int -> IO ()
+displayCommands =
+   message $ foldl makeCmd "" availableSorts ++ "⟨s⟩witch subreddit/open ⟨A-Y⟩"
+
+-- |pretty print sort name with initial
+makeCmd :: String -> (Char, String) -> String
+makeCmd acc (s, sort) =
+   acc ++ ('⟨':s:'⟩':tail sort) ++ "/"
+
+-- |get full sort name from initial
+fullSort :: Char -> Maybe String
+fullSort = (`lookup` availableSorts)
 
 -- |main event loop
 loop :: NamedListing -> Int -> IO ()
@@ -269,16 +287,21 @@ loop l w = do
    cmd <- getChar
    clearLine
    case cmd of
-      'n' -> do
-         list <- getNew $ takeWhile (/=' ') $ name l
-         displayListing list w
-         loop list w
-      'h' -> do
-         list <- getHot $ takeWhile (/=' ') $ name l
+      's' -> do
+         putStrLn ""
+         putStr "subreddit to switch to: "
+         hFlush stdout
+         subreddit <- getLine
+         list <- getListing "new" subreddit
          displayListing list w
          loop list w
       -- 25 elements displayed by default
       x | x `elem` ['A'..'Y'] -> do
          open l (ord x - ord 'A') w
          loop l w
+        | isJust (fullSort x) -> do
+         list <- let (Just sort) = fullSort x in
+            getListing sort $ takeWhile (/=' ') $ name l
+         displayListing list w
+         loop list w
       _ -> return ()
