@@ -8,10 +8,11 @@
 -- allow Text objects directly as strings, used for JSON parsing
 
 import Control.Applicative
-import Data.Version
-import Text.Printf
-import System.Environment
-import System.Info
+import Data.Version        (showVersion)
+import Text.Printf         (printf)
+import System.Environment  (getArgs)
+import System.Info         (os)
+import Data.Char           (ord)
 
 import Data.Aeson
 import Network.Curl.Aeson
@@ -19,13 +20,13 @@ import Network.Curl.Opts
 import System.Process
 import System.Console.ANSI
 
-import Paths_rascal
+import Paths_rascal        (version)
 
 userAgent :: String
 userAgent = "rascal/" ++ showVersion version ++ " by soli"
 
-white :: String
-white = setSGRCode [SetColor Foreground Vivid White]
+-- white :: String
+-- white = setSGRCode [SetColor Foreground Vivid White]
 cyan :: String
 cyan  = setSGRCode [SetColor Foreground Dull Cyan]
 yellow :: String
@@ -38,6 +39,8 @@ red :: String
 red  = setSGRCode [SetColor Foreground Dull Red]
 reset :: String
 reset = setSGRCode [Reset]
+bold :: String
+bold = setSGRCode [SetConsoleIntensity BoldIntensity]
 
 data Link = Link {
    title :: String,
@@ -92,22 +95,17 @@ instance FromJSON Listing where
       Listing <$> datum .: "children"
    parseJSON _ = empty
 
--- | prepend formatted int before a string
-addNumber :: Int -> String -> String
-addNumber =
-   printf " %2d |%s"
-
--- add number and separate by newlines
+-- |add capital letter and separate by newlines
 numberLines :: [String] -> String
 numberLines l =
-   unlines $ zipWith addNumber [1..] l
+   unlines $ zipWith (\c s -> ' ':c:" |" ++ s) ['A'..'Z'] l
 
 showListing :: NamedListing -> Int -> String
 showListing l width =
    let (Listing links) = listing l in
-      white ++ "\n--=| /r/" ++ name l ++ " |=--\n\n" ++ reset ++
-      -- the -5 comes from numberLines
-      numberLines (map (`showLink` (width - 5)) links)
+      bold ++ "\n--=| /r/" ++ name l ++ " |=--\n\n" ++ reset ++
+      -- the -4 comes from numberLines
+      numberLines (map (`showLink` (width - 4)) links)
 
 -- Poor man's HTML entities unescaping
 unescape :: String -> String
@@ -166,7 +164,7 @@ openUrl :: String -> IO ()
 openUrl u = case os of
     "darwin"  -> callProcess "open" [u]
     "linux"   -> callProcess "xdg-open" [u, "&"] -- getEnv BROWSER ???
-    "windows" -> callProcess "start" ["", u]
+    "mingw32" -> callProcess "start" ["", u]
 
 -- GET comments
 -- r/subreddit/comments/article_id36.json?context=0&sort=(new|hot)
@@ -213,7 +211,7 @@ loop l w = do
       'h':_ -> do
          list <- getHot $ takeWhile (/=' ') $ name l
          loop list w
-      n@(x:_) | x `elem` ['1'..'9'] -> do
-         open (listing l) (read n - 1) w     -- TODO handle failure/use reads
+      (x:_) | x `elem` ['A'..'Z'] -> do
+         open (listing l) (ord x - ord 'A') w     -- TODO handle failure
          loop l w
       _ -> return ()
