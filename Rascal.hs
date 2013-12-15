@@ -15,9 +15,10 @@ import System.Environment  (getArgs)
 import System.Info         (os)
 import Data.Char           (ord)
 import System.IO
+import Control.Exception   (catch)
 
 import Data.Aeson          (parseJSON, FromJSON, Value(Object), (.:), (.:?), (.!=))
-import Network.Curl.Aeson  (curlAeson, noData)
+import Network.Curl.Aeson  (curlAeson, noData, CurlAesonException)
 import Network.Curl.Opts   (CurlOption(CurlUserAgent))
 import System.Process      (callProcess, readProcess)
 import System.Console.ANSI
@@ -137,13 +138,20 @@ getHot :: String -> IO NamedListing
 getHot = getListing "hot"
 
 -- |get posts according to selection in argument's subreddit as a listing
--- FIXME handle gracefully curl exceptions
 getListing :: String -> String -> IO NamedListing
 getListing select subreddit = do
    l <- let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
                      "/" ++ select ++ ".json" in
-      curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
+      catch
+         (curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData)
+         listingForError
    return $ NamedListing (subreddit ++ " -- " ++ select) l
+
+-- |return empty listing if there is a cURL exception
+listingForError :: CurlAesonException -> IO Listing
+listingForError e = do
+   print e
+   return $ Listing []
 
 -- |extract links from some HTML
 hrefs :: String -> [String]
@@ -157,14 +165,15 @@ hrefs "" = []
 -- |open nth link in a listing in given width
 open :: NamedListing -> Int -> Int -> IO ()
 open nl n w =
-   let (Listing l) = listing nl
-       ln = (l !! n) in
-      if isSelf ln
-      then do
-         openSelf ln w
-         displayListing nl w
-      else
-         openUrl (link ln) w
+   let (Listing l) = listing nl in
+      -- n >= 0 by construction on call of open, but...
+      when (0 <= n && n < length l) $ let ln = (l !! n) in
+         if isSelf ln
+         then do
+            openSelf ln w
+            displayListing nl w
+         else
+            openUrl (link ln) w
 
 -- |display a self link, with its contained hrefs
 openSelf :: Link -> Int -> IO ()
@@ -268,7 +277,8 @@ loop l w = do
          list <- getHot $ takeWhile (/=' ') $ name l
          displayListing list w
          loop list w
-      x | x `elem` ['A'..'Z'] -> do
-         open l (ord x - ord 'A') w     -- TODO handle failure
+      -- 25 elements displayed by default
+      x | x `elem` ['A'..'Y'] -> do
+         open l (ord x - ord 'A') w
          loop l w
       _ -> return ()
