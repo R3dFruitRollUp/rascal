@@ -295,13 +295,14 @@ loop l w = do
          list <- getListing "new" subreddit
          displayListing list w
          loop list w
-      -- 25 elements displayed by default
-      x | x `elem` ['A'..'Y'] -> do
-         open l (ord x - ord 'A') w
-         loop l w
-        | isJust (fullSort x) -> do
+      -- is this one of the sort options?
+      x | isJust (fullSort x) -> do
          list <- let (Just sort) = fullSort x in
             getListing sort $ takeWhile (/=' ') $ name l
          displayListing list w
          loop list w
+      -- 25 elements displayed by default
+        | x `elem` ['A'..'Y'] -> do
+         open l (ord x - ord 'A') w
+         loop l w
       _ -> return ()
