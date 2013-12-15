@@ -115,6 +115,11 @@ showListing l width =
       -- the -4 comes from numberLines
       numberLines (map (`showLink` (width - 4)) links)
 
+displayListing :: NamedListing -> Int -> IO ()
+displayListing l w = do
+   putStrLn $ showListing l w
+   message "⟨n⟩ew/⟨h⟩ot/open ⟨#⟩" w
+
 -- Poor man's HTML entities unescaping
 unescape :: String -> String
 unescape [] = []
@@ -150,15 +155,16 @@ hrefs "" = []
 
 
 -- |open nth link in a listing in given width
-open :: Listing -> Int -> Int -> IO ()
-open (Listing l) n w =
-   let ln = (l !! n) in
+open :: NamedListing -> Int -> Int -> IO ()
+open nl n w =
+   let (Listing l) = listing nl
+       ln = (l !! n) in
       if isSelf ln
-      then
+      then do
          openSelf ln w
-      else let u = link ln in do
-         message ("opening '" ++ u ++ "'…") w
-         openUrl u
+         displayListing nl w
+      else
+         openUrl (link ln) w
 
 -- |display a self link, with its contained hrefs
 openSelf :: Link -> Int -> IO ()
@@ -176,18 +182,17 @@ openSelf ln w = do
          putStr "\n"
          showRefs $ zip [1..] refs
          message "press link number to open or a key to continue" w
-         openRefs refs
+         openRefs refs w
 
 -- |open requested hrefs as urls and stop if anything else
-openRefs :: [String] -> IO ()
-openRefs l = do
+openRefs :: [String] -> Int -> IO ()
+openRefs l w = do
    c <- getChar
    clearLine
-   hFlush stdout
    let n = ord c - ord '1' in
       when (0 <= n && n < length l) $ do
-         openUrl $ l !! n
-         openRefs l
+         openUrl (l !! n) w
+         openRefs l w
 
 showRefs :: [(Int, String)] -> IO ()
 showRefs [] = return ()
@@ -208,8 +213,10 @@ message s w =
       putStrLn $ replicate (w - l) '-'
 
 -- |open an url in a platform independent way
-openUrl :: String -> IO ()
-openUrl u = case os of
+openUrl :: String -> Int -> IO ()
+openUrl u w = do
+   message ("opening '" ++ u ++ "'…") w
+   case os of
     "darwin"  -> callProcess "open" [u]
     "linux"   -> callProcess "xdg-open" [u, "&"] -- getEnv BROWSER ???
     "mingw32" -> callProcess "start" ["", u]
@@ -245,23 +252,23 @@ main = do
    columns <- readProcess "tput" ["cols"] []
    list <- getNew $ if length args == 1 then head args else "scrolls"
    let width = read columns in
-      loop list width
+      displayListing list width >> loop list width
 
 -- |main event loop
 loop :: NamedListing -> Int -> IO ()
 loop l w = do
-   putStrLn $ showListing l w
-   message "⟨n⟩ew/⟨h⟩ot/open ⟨#⟩" w
    cmd <- getChar
    clearLine
    case cmd of
       'n' -> do
          list <- getNew $ takeWhile (/=' ') $ name l
+         displayListing list w
          loop list w
       'h' -> do
          list <- getHot $ takeWhile (/=' ') $ name l
+         displayListing list w
          loop list w
       x | x `elem` ['A'..'Z'] -> do
-         open (listing l) (ord x - ord 'A') w     -- TODO handle failure
+         open l (ord x - ord 'A') w     -- TODO handle failure
          loop l w
       _ -> return ()
