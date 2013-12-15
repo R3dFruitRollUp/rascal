@@ -14,7 +14,7 @@ import System.Environment  (getArgs)
 import System.Info         (os)
 import Data.Char           (ord)
 
-import Data.Aeson          (parseJSON, FromJSON, Value(Object), (.:))
+import Data.Aeson          (parseJSON, FromJSON, Value(Object), (.:), (.:?), (.!=))
 import Network.Curl.Aeson  (curlAeson, noData)
 import Network.Curl.Opts   (CurlOption(CurlUserAgent))
 import System.Process      (callProcess, readProcess)
@@ -51,6 +51,7 @@ data Link = Link {
    -- created :: Int,
    -- uid :: String,
    numComments :: Int,
+   selfHtml :: String,
    selfText :: String
 }
 
@@ -73,6 +74,7 @@ instance FromJSON Link where
            -- <*> datum .: "created_utc"
            -- <*> datum .: "name"
            <*> datum .: "num_comments"
+           <*> datum .:? "selftext_html" .!= ""
            <*> datum .: "selftext"
    parseJSON _ = empty
 
