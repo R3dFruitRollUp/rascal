@@ -3,10 +3,11 @@ module Rascal.Utils where
 
 import Rascal.Constants
 
--- |add capital letter and separate by newlines
+-- |add capital letter and separate by newlines at most 25 strings
+-- |for a total of 4 chars
 letterizeLines :: [String] -> String
 letterizeLines l =
-   unlines $ zipWith (\c s -> ' ':c:" |" ++ s) ['A'..'Z'] l
+   unlines $ zipWith (\c s -> ' ':c:" |" ++ s) ['A'..'Y'] l
 
 -- |Poor man's HTML entities unescaping
 unescape :: String -> String
