@@ -9,7 +9,6 @@
 
 import Control.Applicative (empty, (<$>), (<*>))
 import Control.Monad       (when)
-import Data.Version        (showVersion)
 import Text.Printf         (printf)
 import System.Environment  (getArgs)
 import System.Info         (os)
@@ -22,39 +21,10 @@ import Data.Aeson          (parseJSON, FromJSON, Value(Object), (.:), (.:?), (.!
 import Network.Curl.Aeson  (curlAeson, noData, CurlAesonException)
 import Network.Curl.Opts   (CurlOption(CurlUserAgent))
 import System.Process      (callProcess, readProcess)
-import System.Console.ANSI
+import System.Console.ANSI (clearLine)
 
-import Paths_rascal        (version)
-
--- |user_agent for cURL built with version string
-userAgent :: String
-userAgent = "rascal/" ++ showVersion version ++ " by soli"
-
--- |colors and more
-red :: String
-red  = setSGRCode [SetColor Foreground Dull Red]
-green :: String
-green = setSGRCode [SetColor Foreground Dull Green]
-yellow :: String
-yellow  = setSGRCode [SetColor Foreground Dull Yellow]
-blue :: String
-blue  = setSGRCode [SetColor Foreground Dull Blue]
-magenta :: String
-magenta  = setSGRCode [SetColor Foreground Dull Magenta]
-cyan :: String
-cyan  = setSGRCode [SetColor Foreground Dull Cyan]
-reset :: String
-reset = setSGRCode [Reset]
-bold :: String
-bold = setSGRCode [SetConsoleIntensity BoldIntensity]
-
--- |available sort options
-availableSorts :: [(Char, String)]
-availableSorts = [
-   ('n', "new"),
-   ('h', "hot"),
-   ('t', "top"),
-   ('c', "controversial")]
+import Rascal.Constants
+import Rascal.Utils
 
 data Link = Link {
    title :: String,
@@ -115,31 +85,18 @@ instance FromJSON Listing where
       Listing <$> datum .: "children"
    parseJSON _ = empty
 
--- |add capital letter and separate by newlines
-numberLines :: [String] -> String
-numberLines l =
-   unlines $ zipWith (\c s -> ' ':c:" |" ++ s) ['A'..'Z'] l
-
 showListing :: NamedListing -> Int -> String
 showListing l width =
    let (Listing links) = listing l in
       bold ++ "\n--=| /r/" ++ name l ++ " |=--\n\n" ++ reset ++
-      -- the -4 comes from numberLines
-      numberLines (map (`showLink` (width - 4)) links)
+      -- the -4 comes from letterizeLines
+      letterizeLines (map (`showLink` (width - 4)) links)
 
 -- |print a listing on screen and ask for a command
 displayListing :: NamedListing -> Int -> IO ()
 displayListing l w = do
    putStrLn $ showListing l w
    displayCommands w
-
--- Poor man's HTML entities unescaping
-unescape :: String -> String
-unescape [] = []
-unescape ('&':'a':'m':'p':';':xs) = '&':xs
-unescape ('&':'l':'t':';':xs) = '<':xs
-unescape ('&':'g':'t':';':xs) = '>':xs
-unescape (x:xs) = x:unescape xs
 
 -- |get posts according to selection in argument's subreddit as a listing
 getListing :: String -> String -> IO NamedListing
@@ -156,15 +113,6 @@ listingForError :: CurlAesonException -> IO Listing
 listingForError e = do
    print e
    return $ Listing []
-
--- |extract links from some HTML
-hrefs :: String -> [String]
-hrefs ('h':'r':'e':'f':'=':'"':s) =
-   let (u, r) = break (== '"') s in
-      (u:hrefs r)
-hrefs (_:xs) = hrefs xs
-hrefs "" = []
-
 
 -- |open nth link in a listing in given width
 open :: NamedListing -> Int -> Int -> IO ()
@@ -188,7 +136,7 @@ openSelf ln w = do
       if null refs
       then do
          message "press a key to continue" w
-         getChar
+         _ <- getChar
          clearLine
          return ()
       else do
@@ -233,6 +181,7 @@ openUrl u w = do
     "darwin"  -> callProcess "open" [u]
     "linux"   -> callProcess "xdg-open" [u, "&"] -- getEnv BROWSER ???
     "mingw32" -> callProcess "start" ["", u]
+    _         -> return ()
 
 -- GET comments
 -- r/subreddit/comments/article_id36.json?context=0&sort=(new|hot)
@@ -272,15 +221,6 @@ displayCommands :: Int -> IO ()
 displayCommands =
    message $ foldl makeCmd "" availableSorts ++ "⟨s⟩witch subreddit/open ⟨A-Y⟩"
 
--- |pretty print sort name with initial
-makeCmd :: String -> (Char, String) -> String
-makeCmd acc (s, sort) =
-   acc ++ ('⟨':s:'⟩':tail sort) ++ "/"
-
--- |get full sort name from initial
-fullSort :: Char -> Maybe String
-fullSort = (`lookup` availableSorts)
-
 -- |main event loop
 loop :: NamedListing -> Int -> IO ()
 loop l w = do
@@ -296,8 +236,8 @@ loop l w = do
          displayListing list w
          loop list w
       -- is this one of the sort options?
-      x | isJust (fullSort x) -> do
-         list <- let (Just sort) = fullSort x in
+      x | isJust (getFullSort x) -> do
+         list <- let (Just sort) = getFullSort x in
             getListing sort $ takeWhile (/=' ') $ name l
          displayListing list w
          loop list w
