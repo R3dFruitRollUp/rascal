@@ -22,7 +22,7 @@ import Network.Curl.Aeson  (curlAeson, noData, CurlAesonException)
 import Network.Curl.Opts   (CurlOption(CurlUserAgent))
 import System.Process      (callProcess, readProcess)
 import System.Console.ANSI (clearLine)
-import Data.Vector         (toList, (!))
+import Data.Vector         (toList)
 
 import Rascal.Constants
 import Rascal.Utils
@@ -34,7 +34,7 @@ data Link = Link {
    isSelf :: Bool,
    link :: String,
    -- created :: Int,
-   -- uid :: String,
+   uid :: String,
    numComments :: Int,
    selfHtml :: String,
    selfText :: String
@@ -47,9 +47,9 @@ data NamedListing = NamedListing {
    listing :: Listing
 }
 
-newtype Comments = Comments [Comment]
+newtype Comments = Comments [CommentListing] deriving (Show)
 
-newtype CommentListing = CommentListing [Comment]
+newtype CommentListing = CommentListing [Comment] deriving (Show)
 
 data Comment = Comment {
    cauthor :: String,
@@ -59,7 +59,7 @@ data Comment = Comment {
    bodyHtml :: String,
    body :: String,
    children :: Comments
-}
+} | OriginalArticle deriving (Show)
 
 -- |json parser for 'Link'
 instance FromJSON Link where
@@ -72,7 +72,7 @@ instance FromJSON Link where
            <*> datum .: "is_self"
            <*> datum .: "url"
            -- <*> datum .: "created_utc"
-           -- <*> datum .: "name"
+           <*> datum .: "name"
            <*> datum .: "num_comments"
            <*> datum .:? "selftext_html" .!= ""
            <*> datum .: "selftext"
@@ -98,8 +98,18 @@ instance FromJSON CommentListing where
    parseJSON _ = empty
 
 instance FromJSON Comment where
-   parseJSON (Object o) = 
-      return $ Comment "" 0 "" "" (Comments [])
+   parseJSON (Object o) =  do
+      kind <- o .: "kind"
+      if (kind :: String) == "t1"
+      then do
+         datum <- o .: "data"
+         Comment <$> datum .: "author"
+                 <*> datum .: "score"
+                 <*> datum .: "body_html"
+                 <*> datum .: "body"
+                 <*> return (Comments [])
+      else
+         return OriginalArticle
    parseJSON _ = empty
 
 -- we do not use Show because we depend on an IO generated width
@@ -156,6 +166,8 @@ open nl n w =
          if isSelf ln
          then do
             openSelf ln w
+            let subreddit = takeWhile (/=' ') (name nl) in
+               openComments subreddit ln w
             displayListing nl w
          else
             openUrl (link ln) w
@@ -177,6 +189,18 @@ openSelf ln w = do
          showRefs $ zip [1..] refs
          message "press link number to open or a key to continue" w
          openRefs refs w
+
+openComments :: String -> Link -> Int -> IO ()
+openComments subreddit ln w =
+   when (numComments ln > 0) $ do
+      comm <- getComments subreddit (drop 3 (uid ln))
+      print comm
+
+getComments :: String -> String -> IO Comments
+getComments subreddit article =
+   let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
+                "/comments/" ++ article ++ ".json" in
+      curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
 
 -- |open requested hrefs as urls and stop if anything else
 openRefs :: [String] -> Int -> IO ()
@@ -274,7 +298,7 @@ loop l w = do
             getListing sort $ takeWhile (/=' ') $ name l
          displayListing list w
          loop list w
-      -- 25 elements displayed by default
+      -- 25 elements displayed max
         | x `elem` ['A'..'Y'] -> do
          open l (ord x - ord 'A') w
          loop l w
