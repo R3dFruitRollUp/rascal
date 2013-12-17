@@ -213,7 +213,7 @@ main = do
    hSetBuffering stdin NoBuffering
    args <- getArgs
    columns <- readProcess "tput" ["cols"] []
-   list <- getListing "new" $ if length args == 1 then head args else "scrolls"
+   list <- getListing "new" $ if length args == 1 then head args else "haskell"
    let width = read columns in
       displayListing list width >> loop list width
 
