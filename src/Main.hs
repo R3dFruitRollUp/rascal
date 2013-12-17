@@ -17,11 +17,12 @@ import Data.Maybe          (isJust)
 import System.IO
 import Control.Exception   (catch, handle)
 
-import Data.Aeson          (parseJSON, FromJSON, Value(Object), (.:), (.:?), (.!=))
+import Data.Aeson
 import Network.Curl.Aeson  (curlAeson, noData, CurlAesonException)
 import Network.Curl.Opts   (CurlOption(CurlUserAgent))
 import System.Process      (callProcess, readProcess)
 import System.Console.ANSI (clearLine)
+import Data.Vector         (toList, (!))
 
 import Rascal.Constants
 import Rascal.Utils
@@ -46,6 +47,20 @@ data NamedListing = NamedListing {
    listing :: Listing
 }
 
+newtype Comments = Comments [Comment]
+
+newtype CommentListing = CommentListing [Comment]
+
+data Comment = Comment {
+   cauthor :: String,
+   cscore :: Int,
+   -- created :: Int,
+   -- edited :: Bool,
+   bodyHtml :: String,
+   body :: String,
+   children :: Comments
+}
+
 -- |json parser for 'Link'
 instance FromJSON Link where
    parseJSON (Object o) = do
@@ -63,6 +78,30 @@ instance FromJSON Link where
            <*> datum .: "selftext"
    parseJSON _ = empty
 
+-- |json parser for 'Listing'
+instance FromJSON Listing where
+   parseJSON (Object o) = do
+      datum <- o .: "data"
+      Listing <$> datum .: "children"
+   parseJSON _ = empty
+
+-- |json parser for 'Comments'
+instance FromJSON Comments where
+   parseJSON (Array a) = Comments <$> mapM parseJSON (toList a)
+   parseJSON _ = empty
+
+instance FromJSON CommentListing where
+   parseJSON (Object o) = do
+      datum <- o .: "data"
+      a <- datum .: "children"
+      CommentListing <$> mapM parseJSON (toList a)
+   parseJSON _ = empty
+
+instance FromJSON Comment where
+   parseJSON (Object o) = 
+      return $ Comment "" 0 "" "" (Comments [])
+   parseJSON _ = empty
+
 -- we do not use Show because we depend on an IO generated width
 showLink :: Link -> Int -> String
 showLink l width =
@@ -77,13 +116,6 @@ showLink l width =
                    titlewidth titlewidth in
          printf format color (score l) self reset (title l) (author l)
                 magenta (numComments l) reset
-
--- |json parser for 'Listing'
-instance FromJSON Listing where
-   parseJSON (Object o) = do
-      datum <- o .: "data"
-      Listing <$> datum .: "children"
-   parseJSON _ = empty
 
 showListing :: NamedListing -> Int -> String
 showListing l width =
