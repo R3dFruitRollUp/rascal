@@ -1,7 +1,7 @@
 rascal
 ======
 
-[![Build Status](https://travis-ci.org/soli/soli.png)](https://travis-ci.org/soli/soli)
+[![Build Status](https://travis-ci.org/soli/rascal.png)](https://travis-ci.org/soli/rascal)
 
 rascal is a command-line client for [reddit](http://www.reddit.com/).
 
