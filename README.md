@@ -20,3 +20,19 @@ command line
 ```
 $ rascal python
 ```
+
+Here is what rascal looks like when started, and when a _self_ link is chosen
+(`A` was pressed in this case). Non-self links and links detected in posts
+will be opened in your default browser.
+
+![screenщhot](https://github.com/soli/rascal/raw/master/screenshot.png)
+
+(in case you wonder, my iTerm2 is using the dark
+[solarized](https://github.com/altercation/solarized) color scheme.)
+
+Disclaimer
+----------
+
+Please note that rascal is my first Haskell project. As such, it is as much a
+fun experiment for me to discover the ecosystem and the idiodms, than it is a
+really useful project. TL;DR: YMMV.
