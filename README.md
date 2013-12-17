@@ -1,5 +1,10 @@
-rascal
-======
+```
+                              __ 
+.----.---.-.-----.----.---.-.|  |
+|   _|  _  |__ --|  __|  _  ||  |
+|__| |___._|_____|____|___._||__|
+                                 
+```
 
 [![Build Status](https://travis-ci.org/soli/rascal.png)](https://travis-ci.org/soli/rascal)
 
@@ -27,12 +32,14 @@ will be opened in your default browser.
 
 ![screenщhot](https://github.com/soli/rascal/raw/master/screenshot.png)
 
-(in case you wonder, my iTerm2 is using the dark
-[solarized](https://github.com/altercation/solarized) color scheme.)
+### Notes
 
-Disclaimer
-----------
+In case you wonder, my iTerm2 is using the dark
+[solarized](https://github.com/altercation/solarized) color scheme. The ASCII
+title was generated with `figlet -f chunky`.
+
+## Disclaimer
 
 Please note that rascal is my first Haskell project. As such, it is as much a
-fun experiment for me to discover the ecosystem and the idiodms, than it is a
-really useful project. TL;DR: YMMV.
+fun experiment for me to discover the ecosystem and the idiodms, than a really
+useful project. TL;DR: YMMV.
