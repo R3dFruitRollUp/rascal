@@ -15,7 +15,7 @@ import System.Info         (os)
 import Data.Char           (ord)
 import Data.Maybe          (isJust)
 import System.IO
-import Control.Exception   (catch)
+import Control.Exception   (catch, handle)
 
 import Data.Aeson          (parseJSON, FromJSON, Value(Object), (.:), (.:?), (.!=))
 import Network.Curl.Aeson  (curlAeson, noData, CurlAesonException)
@@ -95,7 +95,9 @@ showListing l width =
 -- |print a listing on screen and ask for a command
 displayListing :: NamedListing -> Int -> IO ()
 displayListing l w = do
-   putStrLn $ showListing l w
+   catch
+      (putStrLn $ showListing l w)
+      handleCurlAesonException
    displayCommands w
 
 -- |get posts according to selection in argument's subreddit as a listing
@@ -103,21 +105,20 @@ getListing :: String -> String -> IO NamedListing
 getListing select subreddit = do
    l <- let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
                      "/" ++ select ++ ".json" in
-      catch
-         (curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData)
-         listingForError
+      curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
    return $ NamedListing (subreddit ++ " -- " ++ select) l
 
--- |return empty listing if there is a cURL exception
-listingForError :: CurlAesonException -> IO Listing
-listingForError e = do
+-- |print error message if there is a cURL exception
+handleCurlAesonException :: CurlAesonException -> IO ()
+handleCurlAesonException e = do
+   putStrLn $ red ++ "Caught exception:" ++ reset
    print e
-   return $ Listing []
+   putStrLn "maybe given subreddit does not exist…"
 
 -- |open nth link in a listing in given width
 open :: NamedListing -> Int -> Int -> IO ()
 open nl n w =
-   let (Listing l) = listing nl in
+   handle handleCurlAesonException $ let (Listing l) = listing nl in
       -- n >= 0 by construction on call of open, but...
       when (0 <= n && n < length l) $ let ln = (l !! n) in
          if isSelf ln
