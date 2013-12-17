@@ -12,9 +12,9 @@ letterizeLines l =
 -- |Poor man's HTML entities unescaping
 unescape :: String -> String
 unescape [] = []
-unescape ('&':'a':'m':'p':';':xs) = '&':xs
-unescape ('&':'l':'t':';':xs) = '<':xs
-unescape ('&':'g':'t':';':xs) = '>':xs
+unescape ('&':'a':'m':'p':';':xs) = '&':unescape xs
+unescape ('&':'l':'t':';':xs) = '<':unescape xs
+unescape ('&':'g':'t':';':xs) = '>':unescape xs
 unescape (x:xs) = x:unescape xs
 
 -- |extract links from some HTML
