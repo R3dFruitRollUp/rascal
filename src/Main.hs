@@ -52,13 +52,13 @@ newtype Comments = Comments [CommentListing] deriving (Show)
 newtype CommentListing = CommentListing [Comment] deriving (Show)
 
 data Comment = Comment {
-   _cauthor :: String,
-   _ups :: Int,
-   _downs :: Int,
+   cauthor :: String,
+   ups :: Int,
+   downs :: Int,
    -- created :: Int,
    -- edited :: Bool,
    _bodyHtml :: String,
-   _body :: String,
+   body :: String,
    _children :: Comments
 } | OriginalArticle deriving (Show)
 
@@ -136,6 +136,14 @@ showListing l width =
       -- the -4 comes from letterizeLines
       letterizeLines (map (`showLink` (width - 4)) links)
 
+showComment :: Int -> Int -> Comment -> String
+showComment width depth c =
+   let depth' = depth + 1
+       initialIndent = indentString width depth' ""
+       commentBlock = indentString width depth' (body c) in
+      printf "%s- %.20s (%s%d%s|%s%d%s)\n%s" initialIndent (cauthor c) red (ups c) reset
+         blue (downs c) reset commentBlock
+
 -- |print a listing on screen and ask for a command
 displayListing :: NamedListing -> Int -> IO ()
 displayListing l w = do
@@ -181,22 +189,24 @@ openSelf ln w = do
    putStrLn $ selfText ln
    let refs = hrefs (selfHtml ln) in
       if null refs
-      then do
-         message "press a key to continue" w
-         _ <- getChar
-         clearLine
-         return ()
+      then waitKey w
       else do
          putStr "\n"
          showRefs $ zip [1..] refs
          message "press link number to open or a key to continue" w
          openRefs refs w
 
+-- |display all comments of an article in a subreddit
 openComments :: String -> Link -> Int -> IO ()
-openComments subreddit ln _w =
+openComments subreddit ln w =
    when (numComments ln > 0) $ do
       comm <- getComments subreddit (drop 3 (uid ln))
-      print comm
+      let (Comments cll) = comm
+          -- the first is OriginalArticle, the length is always 2
+          (CommentListing cl) = cll !! 1 -- ^FIXME handle error
+      putStrLn ""
+      mapM_ (putStrLn . showComment w 0) cl
+      waitKey w
 
 getComments :: String -> String -> IO Comments
 getComments subreddit article =
@@ -231,6 +241,14 @@ message s w =
       putStrLn ""
       putStr msg
       putStrLn $ replicate (w - l) '-'
+
+-- |wait for a key press
+waitKey :: Int -> IO ()
+waitKey w = do
+   message "press a key to continue" w
+   _ <- getChar
+   clearLine
+   return ()
 
 -- |open an url in a platform independent way
 openUrl :: String -> Int -> IO ()

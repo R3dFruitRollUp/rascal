@@ -4,7 +4,7 @@ module Rascal.Utils where
 import Rascal.Constants
 
 -- |add capital letter and separate by newlines at most 25 strings
--- |for a total of 4 chars
+-- for a total of 4 chars
 letterizeLines :: [String] -> String
 letterizeLines l =
    unlines $ zipWith (\c s -> ' ':c:" |" ++ s) ['A'..'Y'] l
@@ -33,3 +33,20 @@ makeCmd acc (s, sort) =
 -- |get full sort name from initial
 getFullSort :: Char -> Maybe String
 getFullSort = (`lookup` availableSorts)
+
+-- |add a block indent on the left for a string to be printed in given width
+-- for each n, 2 spaces are added
+indentString :: Int -> Int -> String -> String
+indentString width n s =
+   let lineLength = width - 2 * n
+       indent = replicate (2 * n) ' '
+       strings = concatMap (splitAt' lineLength) (lines s) in
+      unlines $ map (indent ++) strings
+
+-- |split a string to a list of substring of length <= n
+splitAt' :: Int -> String -> [String]
+splitAt' n s =
+   let (s1, s2) = splitAt n s in
+      if null s2
+      then [s1]
+      else s1:splitAt' n s2
