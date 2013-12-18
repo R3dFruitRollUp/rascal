@@ -52,14 +52,14 @@ newtype Comments = Comments [CommentListing] deriving (Show)
 newtype CommentListing = CommentListing [Comment] deriving (Show)
 
 data Comment = Comment {
-   cauthor :: String,
-   ups :: Int,
-   downs :: Int,
+   _cauthor :: String,
+   _ups :: Int,
+   _downs :: Int,
    -- created :: Int,
    -- edited :: Bool,
-   bodyHtml :: String,
-   body :: String,
-   children :: Comments
+   _bodyHtml :: String,
+   _body :: String,
+   _children :: Comments
 } | OriginalArticle deriving (Show)
 
 -- |json parser for 'Link'
@@ -193,7 +193,7 @@ openSelf ln w = do
          openRefs refs w
 
 openComments :: String -> Link -> Int -> IO ()
-openComments subreddit ln w =
+openComments subreddit ln _w =
    when (numComments ln > 0) $ do
       comm <- getComments subreddit (drop 3 (uid ln))
       print comm
