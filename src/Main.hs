@@ -53,7 +53,8 @@ newtype CommentListing = CommentListing [Comment] deriving (Show)
 
 data Comment = Comment {
    cauthor :: String,
-   cscore :: Int,
+   ups :: Int,
+   downs :: Int,
    -- created :: Int,
    -- edited :: Bool,
    bodyHtml :: String,
@@ -104,7 +105,8 @@ instance FromJSON Comment where
       then do
          datum <- o .: "data"
          Comment <$> datum .: "author"
-                 <*> datum .: "score"
+                 <*> datum .: "ups"
+                 <*> datum .: "downs"
                  <*> datum .: "body_html"
                  <*> datum .: "body"
                  <*> return (Comments [])
