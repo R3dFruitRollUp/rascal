@@ -7,7 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- allow Text objects directly as strings, used for JSON parsing
 
-import Control.Applicative (empty, (<$>), (<*>))
+import Control.Applicative (empty, (<$>), (<*>), (<|>))
 import Control.Monad       (when)
 import Text.Printf         (printf)
 import System.Environment  (getArgs)
@@ -59,7 +59,7 @@ data Comment = Comment {
    -- edited :: Bool,
    _bodyHtml :: String,
    body :: String,
-   _children :: Comments
+   children :: CommentListing
 } | OriginalArticle deriving (Show)
 
 -- |json parser for 'Link'
@@ -109,7 +109,7 @@ instance FromJSON Comment where
                  <*> datum .: "downs"
                  <*> datum .: "body_html"
                  <*> datum .: "body"
-                 <*> return (Comments [])
+                 <*> (datum .: "replies" <|> return (CommentListing []))
       else
          return OriginalArticle
    parseJSON _ = empty
@@ -136,13 +136,17 @@ showListing l width =
       -- the -4 comes from letterizeLines
       letterizeLines (map (`showLink` (width - 4)) links)
 
-showComment :: Int -> Int -> Comment -> String
+-- TODO different color if OP? better ASCII threading
+showComment :: Int -> Int -> Comment -> [String]
 showComment width depth c =
    let depth' = depth + 1
-       initialIndent = indentString width depth' ""
+       initialIndent = indentString width depth $ printf "- %.20s (%s%d%s|%s%d%s)" (cauthor c) red (ups c) reset blue (downs c) reset
        commentBlock = indentString width depth' (unescape (body c)) in
-      printf "%s- %.20s (%s%d%s|%s%d%s)\n%s" initialIndent (cauthor c) red (ups c) reset
-         blue (downs c) reset commentBlock
+      (initialIndent ++ commentBlock):showCommentListing width depth' (children c)
+
+showCommentListing :: Int -> Int -> CommentListing -> [String]
+showCommentListing width depth (CommentListing cl) =
+   concatMap (showComment width depth) cl
 
 -- |print a listing on screen and ask for a command
 displayListing :: NamedListing -> Int -> IO ()
@@ -201,11 +205,10 @@ openComments :: String -> Link -> Int -> IO ()
 openComments subreddit ln w =
    when (numComments ln > 0) $ do
       comm <- getComments subreddit (drop 3 (uid ln))
-      let (Comments cll) = comm
-          -- the first is OriginalArticle, the length is always 2
-          (CommentListing cl) = cll !! 1 -- ^FIXME handle error
       putStrLn ""
-      mapM_ (putStrLn . showComment w 0) cl
+      let (Comments cll) = comm in
+          -- the first is OriginalArticle, the length is always 2
+         mapM_ putStrLn $ showCommentListing w 0 (cll !! 1) -- ^FIXME handle error
       waitKey w
 
 getComments :: String -> String -> IO Comments

@@ -35,7 +35,8 @@ getFullSort :: Char -> Maybe String
 getFullSort = (`lookup` availableSorts)
 
 -- |add a block indent on the left for a string to be printed in given width
--- for each n, 2 spaces are added
+-- for each n, 2 spaces are added. Note, because of unlines, a \n ends each
+-- line
 indentString :: Int -> Int -> String -> String
 indentString width n s =
    let lineLength = width - 2 * n
