@@ -56,7 +56,7 @@ data Comment = Comment {
    ups :: Int,
    downs :: Int,
    -- created :: Int,
-   -- edited :: Bool,
+   -- edited :: Int (or false),
    _bodyHtml :: String,
    body :: String,
    children :: CommentListing
@@ -136,7 +136,7 @@ showListing l width =
       -- the -4 comes from letterizeLines
       letterizeLines (map (`showLink` (width - 4)) links)
 
--- TODO different color if OP? better ASCII threading
+-- TODO different color if OP?
 showComment :: Int -> String -> String -> String -> Comment -> [String]
 showComment width prefix addedPrefix futurePrefix c =
    let prefix' = prefix ++ futurePrefix
@@ -220,7 +220,7 @@ openComments subreddit ln w =
 getComments :: String -> String -> IO Comments
 getComments subreddit article =
    let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
-                "/comments/" ++ article ++ ".json" in
+                "/comments/" ++ article ++ ".json?sort=new" in
       curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
 
 -- |open requested hrefs as urls and stop if anything else
