@@ -37,12 +37,11 @@ getFullSort = (`lookup` availableSorts)
 -- |add a block indent on the left for a string to be printed in given width
 -- for each n, 2 spaces are added. Note, because of unlines, a \n ends each
 -- line
-indentString :: Int -> Int -> String -> String
-indentString width n s =
-   let lineLength = width - 2 * n
-       indent = replicate (2 * n) ' '
+indentString :: Int -> String -> String -> String
+indentString width prefix s =
+   let lineLength = width - length prefix
        strings = concatMap (splitAt' lineLength) (lines s) in
-      unlines $ map (indent ++) strings
+      unlines $ map (prefix ++) strings
 
 -- |split a string to a list of substring of length <= n
 splitAt' :: Int -> String -> [String]

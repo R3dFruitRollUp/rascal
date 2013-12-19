@@ -137,16 +137,22 @@ showListing l width =
       letterizeLines (map (`showLink` (width - 4)) links)
 
 -- TODO different color if OP? better ASCII threading
-showComment :: Int -> Int -> Comment -> [String]
-showComment width depth c =
-   let depth' = depth + 1
-       initialIndent = indentString width depth $ printf "- %.20s (%s%d%s|%s%d%s)" (cauthor c) red (ups c) reset blue (downs c) reset
-       commentBlock = indentString width depth' (unescape (body c)) in
-      (initialIndent ++ commentBlock):showCommentListing width depth' (children c)
+showComment :: Int -> String -> String -> String -> Comment -> [String]
+showComment width prefix addedPrefix futurePrefix c =
+   let prefix' = prefix ++ futurePrefix
+       initialIndent = indentString width prefix $ printf
+         "%s─ %.20s (%s%d%s|%s%d%s)" addedPrefix (cauthor c) red (ups c)
+         reset blue (downs c) reset
+       commentBlock = indentString width prefix' (unescape (body c)) in
+      (prefix ++ "│ "):(initialIndent ++ init commentBlock):
+         showCommentListing width prefix' (children c)
 
-showCommentListing :: Int -> Int -> CommentListing -> [String]
-showCommentListing width depth (CommentListing cl) =
-   concatMap (showComment width depth) cl
+showCommentListing :: Int -> String -> CommentListing -> [String]
+showCommentListing width prefix (CommentListing cl) =
+   case cl of
+      [] -> []
+      _ -> concatMap (showComment width prefix "├" "│ ") (init cl) ++
+          showComment width prefix "└" "  " (last cl)
 
 -- |print a listing on screen and ask for a command
 displayListing :: NamedListing -> Int -> IO ()
@@ -208,7 +214,7 @@ openComments subreddit ln w =
       putStrLn ""
       let (Comments cll) = comm in
           -- the first is OriginalArticle, the length is always 2
-         mapM_ putStrLn $ showCommentListing w 0 (cll !! 1) -- ^FIXME handle error
+         mapM_ putStrLn $ showCommentListing w "" (cll !! 1) -- ^FIXME handle error
       waitKey w
 
 getComments :: String -> String -> IO Comments
