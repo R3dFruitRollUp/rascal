@@ -140,7 +140,7 @@ showComment :: Int -> Int -> Comment -> String
 showComment width depth c =
    let depth' = depth + 1
        initialIndent = indentString width depth' ""
-       commentBlock = indentString width depth' (body c) in
+       commentBlock = indentString width depth' (unescape (body c)) in
       printf "%s- %.20s (%s%d%s|%s%d%s)\n%s" initialIndent (cauthor c) red (ups c) reset
          blue (downs c) reset commentBlock
 
@@ -186,7 +186,7 @@ open nl n w =
 openSelf :: Link -> Int -> IO ()
 openSelf ln w = do
    message "" w
-   putStrLn $ selfText ln
+   putStrLn $ unescape (selfText ln)
    let refs = hrefs (selfHtml ln) in
       if null refs
       then waitKey w
