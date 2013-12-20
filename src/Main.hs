@@ -4,115 +4,23 @@
 -- MIT License, see LICENSE
 --
 
-{-# LANGUAGE OverloadedStrings #-}
--- allow Text objects directly as strings, used for JSON parsing
-
-import Control.Applicative (empty, (<$>), (<*>), (<|>))
 import Control.Monad       (when)
 import Text.Printf         (printf)
 import System.Environment  (getArgs)
-import System.Info         (os)
 import Data.Char           (ord)
 import Data.Maybe          (isJust)
 import System.IO
 import Control.Exception   (catch, handle)
 
-import Data.Aeson
+import Data.Aeson          (parseJSON)
 import Network.Curl.Aeson  (curlAeson, noData, CurlAesonException)
 import Network.Curl.Opts   (CurlOption(CurlUserAgent))
-import System.Process      (callProcess, readProcess)
+import System.Process      (readProcess)
 import System.Console.ANSI (clearLine)
-import Data.Vector         (toList)
 
 import Rascal.Constants
 import Rascal.Utils
-
-data Link = Link {
-   title :: String,
-   author :: String,
-   score :: Int,
-   isSelf :: Bool,
-   link :: String,
-   -- created :: Int,
-   uid :: String,
-   numComments :: Int,
-   selfHtml :: String,
-   selfText :: String
-}
-
-newtype Listing = Listing [Link]
-
-data NamedListing = NamedListing {
-   name :: String,
-   listing :: Listing
-}
-
-newtype Comments = Comments [CommentListing] deriving (Show)
-
-newtype CommentListing = CommentListing [Comment] deriving (Show)
-
-data Comment = Comment {
-   cauthor :: String,
-   ups :: Int,
-   downs :: Int,
-   -- created :: Int,
-   -- edited :: Int (or false),
-   _bodyHtml :: String,
-   body :: String,
-   children :: CommentListing
-} | OriginalArticle deriving (Show)
-
--- |json parser for 'Link'
-instance FromJSON Link where
-   parseJSON (Object o) = do
-      datum <- o .: "data"
-      etitle <- datum .: "title"
-      Link (unescape etitle)
-           <$> datum .: "author"
-           <*> datum .: "score"
-           <*> datum .: "is_self"
-           <*> datum .: "url"
-           -- <*> datum .: "created_utc"
-           <*> datum .: "name"
-           <*> datum .: "num_comments"
-           <*> datum .:? "selftext_html" .!= ""
-           <*> datum .: "selftext"
-   parseJSON _ = empty
-
--- |json parser for 'Listing'
-instance FromJSON Listing where
-   parseJSON (Object o) = do
-      datum <- o .: "data"
-      Listing <$> datum .: "children"
-   parseJSON _ = empty
-
--- |json parser for 'Comments'
-instance FromJSON Comments where
-   parseJSON (Array a) = Comments <$> mapM parseJSON (toList a)
-   parseJSON _ = empty
-
-instance FromJSON CommentListing where
-   parseJSON (Object o) = do
-      datum <- o .: "data"
-      a <- datum .: "children"
-      CommentListing <$> mapM parseJSON (toList a)
-   parseJSON _ = empty
-
-instance FromJSON Comment where
-   parseJSON (Object o) =  do
-      kind <- o .: "kind"
-      if (kind :: String) == "t1"
-      then do
-         datum <- o .: "data"
-         Comment <$> datum .: "author"
-                 <*> datum .: "ups"
-                 <*> datum .: "downs"
-                 <*> datum .: "body_html"
-                 <*> datum .: "body"
-                 <*> (datum .: "replies" <|> return (CommentListing []))
-      else
-         return OriginalArticle
-   parseJSON _ = empty
+import Rascal.Types
 
 -- we do not use Show because we depend on an IO generated width
 showLink :: Link -> Int -> String
@@ -238,36 +146,6 @@ showRefs [] = return ()
 showRefs ((n, u):xs) = do
    putStrLn $ " [" ++ yellow ++ show n ++ reset ++ "] " ++ blue ++ u ++ reset
    showRefs xs
-
--- |display an informative message
-message :: String -> Int -> IO ()
-message s w =
-   let col = cyan ++ reset
-       msg = if null s
-             then col
-             else "--[" ++ cyan ++ s ++ reset ++ "]"
-       l = length msg - length col in do
-      putStrLn ""
-      putStr msg
-      putStrLn $ replicate (w - l) '-'
-
--- |wait for a key press
-waitKey :: Int -> IO ()
-waitKey w = do
-   message "press a key to continue" w
-   _ <- getChar
-   clearLine
-   return ()
-
--- |open an url in a platform independent way
-openUrl :: String -> Int -> IO ()
-openUrl u w = do
-   message ("opening '" ++ u ++ "'…") w
-   case os of
-    "darwin"  -> callProcess "open" [u]
-    "linux"   -> callProcess "xdg-open" [u, "&"] -- getEnv BROWSER ???
-    "mingw32" -> callProcess "start" ["", u]
-    _         -> return ()
 
 -- GET comments
 -- r/subreddit/comments/article_id36.json?context=0&sort=(new|hot)

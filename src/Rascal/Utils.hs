@@ -1,6 +1,11 @@
 -- |Various utilities for rascal
 module Rascal.Utils where
 
+import System.Info         (os)
+
+import System.Process      (callProcess)
+import System.Console.ANSI (clearLine)
+
 import Rascal.Constants
 
 -- |add capital letter and separate by newlines at most 25 strings
@@ -50,3 +55,33 @@ splitAt' n s =
       if null s2
       then [s1]
       else s1:splitAt' n s2
+
+-- |display an informative message
+message :: String -> Int -> IO ()
+message s w =
+   let col = cyan ++ reset
+       msg = if null s
+             then col
+             else "--[" ++ cyan ++ s ++ reset ++ "]"
+       l = length msg - length col in do
+      putStrLn ""
+      putStr msg
+      putStrLn $ replicate (w - l) '-'
+
+-- |wait for a key press
+waitKey :: Int -> IO ()
+waitKey w = do
+   message "press a key to continue" w
+   _ <- getChar
+   clearLine
+   return ()
+
+-- |open an url in a platform independent way
+openUrl :: String -> Int -> IO ()
+openUrl u w = do
+   message ("opening '" ++ u ++ "'…") w
+   case os of
+    "darwin"  -> callProcess "open" [u]
+    "linux"   -> callProcess "xdg-open" [u, "&"] -- getEnv BROWSER ???
+    "mingw32" -> callProcess "start" ["", u]
+    _         -> return ()
