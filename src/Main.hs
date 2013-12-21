@@ -112,7 +112,7 @@ openSelf ln w = do
       then waitKey w
       else do
          putStr "\n"
-         showRefs $ zip [1..] refs
+         mapM_ putStrLn $ showRefs $ zip [1..] refs
          message "press link number to open or a key to continue" w
          openRefs refs w
 
@@ -145,11 +145,10 @@ openRefs l w = do
          openUrl (l !! n) w
          openRefs l w
 
-showRefs :: [(Int, String)] -> IO ()
-showRefs [] = return ()
-showRefs ((n, u):xs) = do
-   putStrLn $ " [" ++ yellow ++ show n ++ reset ++ "] " ++ blue ++ u ++ reset
-   showRefs xs
+showRefs :: [(Int, String)] -> [String]
+showRefs [] = []
+showRefs ((n, u):xs) =
+   (" [" ++ yellow ++ show n ++ reset ++ "] " ++ blue ++ u ++ reset):showRefs xs
 
 -- GET search
 -- r/subreddit/search.json?syntax=plain&q=&sort=
