@@ -125,6 +125,8 @@ openComments subreddit ln w =
          mapM_ putStrLn $ showCommentListing w "" (cll !! 1) -- ^FIXME handle error
       waitKey w
 
+-- |request comments for a given article
+-- TODO allow to change sort order
 getComments :: String -> String -> IO Comments
 getComments subreddit article =
    let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
@@ -146,9 +148,6 @@ showRefs [] = return ()
 showRefs ((n, u):xs) = do
    putStrLn $ " [" ++ yellow ++ show n ++ reset ++ "] " ++ blue ++ u ++ reset
    showRefs xs
-
--- GET comments
--- r/subreddit/comments/article_id36.json?context=0&sort=(new|hot)
 
 -- GET search
 -- r/subreddit/search.json?syntax=plain&q=&sort=
