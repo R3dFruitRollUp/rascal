@@ -46,23 +46,25 @@ showListing l width =
       -- the -4 comes from letterizeLines
       letterizeLines (map (`showLink` (width - 4)) links)
 
--- TODO different color if OP?
-showComment :: Int -> String -> String -> String -> Comment -> [String]
-showComment width prefix addedPrefix futurePrefix c =
+showComment :: Int -> String -> String -> String -> String -> Comment -> [String]
+showComment width prefix addedPrefix futurePrefix op c =
    let prefix' = prefix ++ futurePrefix
+       author' = if cauthor c == op
+                 then green ++ cauthor c ++ reset
+                 else cauthor c
        initialIndent = indentString width prefix $ printf
-         "%s─ %.20s (%s%d%s|%s%d%s)" addedPrefix (cauthor c) red (ups c)
+         "%s─ %.20s (%s%d%s|%s%d%s)" addedPrefix author' red (ups c)
          reset blue (downs c) reset
        commentBlock = indentString width prefix' (unescape (body c)) in
       (prefix ++ "│ "):(initialIndent ++ init commentBlock):
-         showCommentListing width prefix' (children c)
+         showCommentListing width prefix' op (children c)
 
-showCommentListing :: Int -> String -> CommentListing -> [String]
-showCommentListing width prefix (CommentListing cl) =
+showCommentListing :: Int -> String -> String -> CommentListing -> [String]
+showCommentListing width prefix op (CommentListing cl) =
    case cl of
       [] -> []
-      _ -> concatMap (showComment width prefix "├" "│ ") (init cl) ++
-          showComment width prefix "└" "  " (last cl)
+      _ -> concatMap (showComment width prefix "├" "│ " op) (init cl) ++
+          showComment width prefix "└" "  " op (last cl)
 
 -- |print a listing on screen and ask for a command
 displayListing :: NamedListing -> Int -> IO ()
@@ -124,7 +126,7 @@ openComments subreddit ln w =
       putStrLn ""
       let (Comments cll) = comm in
           -- the first is OriginalArticle, the length is always 2
-         mapM_ putStrLn $ showCommentListing w "" (cll !! 1) -- ^FIXME handle error
+         mapM_ putStrLn $ showCommentListing w "" (author ln) (cll !! 1) -- ^FIXME handle error
       waitKey w
 
 -- |request comments for a given article
