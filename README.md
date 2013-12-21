@@ -39,7 +39,7 @@ Here is what rascal looks like when started, and when a _self_ link (marked
 with a '♦') is chosen (`A` was pressed in this case). Non-self links and links
 detected in posts will be opened in your default browser.
 
-![screenщhot](https://github.com/soli/rascal/raw/master/screenshot.png)
+![screenshot](https://github.com/soli/rascal/raw/master/screenshot.png)
 
 ### Notes
 
