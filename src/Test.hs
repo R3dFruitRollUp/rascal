@@ -4,8 +4,10 @@ import Test.Tasty
 import Test.Tasty.QuickCheck     (testProperty)
 import Test.Tasty.HUnit
 import Test.QuickCheck
+import Data.Map                  (assocs)
 
 import Rascal.Utils
+import Rascal.Conf
 
 data Lines = Lines [String] deriving (Show)
 
@@ -37,15 +39,31 @@ prop_letterizedLinesLength (Lines l) =
    length (head l) + 4 == length (head (lines (letterizeLines l)))
 
 unitTests :: TestTree
-unitTests = testGroup "Unit tests" [
-   testCase "unescape unescapes empty" $
+unitTests = testGroup "Unit tests" [unescapeTests, hrefsTests, parseConfigTests]
+
+unescapeTests :: TestTree
+unescapeTests = testGroup "unescape" [
+   testCase "unescapes empty" $
       unescape "" @?= "",
-   testCase "unescape unescapes nothing" $
+   testCase "unescapes nothing" $
       unescape "& unescape amp nothing;" @?= "& unescape amp nothing;",
-   testCase "unescape unescapes &amp;" $
+   testCase "unescapes &amp;" $
       unescape "& unescape &amp; me;" @?= "& unescape & me;",
-   testCase "unescape unescapes &lt; and &gt;" $
-      unescape "& unescape &lt;me&gt;;" @?= "& unescape <me>;",
+   testCase "unescapes &lt; and &gt;" $
+      unescape "& unescape &lt;me&gt;;" @?= "& unescape <me>;"]
+
+hrefsTests :: TestTree
+hrefsTests = testGroup "hrefs" [
    testCase "no hrefs in empty" $
-      hrefs "" @?= []
+      hrefs "" @?= []]
+
+parseConfigTests :: TestTree
+parseConfigTests = testGroup "parseConfig" [
+   testCase "parseConfig empty" $
+      assocs (parseConfig "") @?= [],
+   testCase "parseConfig dummy" $
+      assocs (parseConfig "foo: bar\nstupid is stupid") @?= [("foo", "bar")],
+   testCase "parseConfig spaces" $
+      assocs (parseConfig " foo : bar \n  stupid = really stupid  ") @?=
+      [("foo", "bar"), ("stupid", "really stupid")]
    ]

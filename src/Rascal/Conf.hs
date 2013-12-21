@@ -1,7 +1,6 @@
 module Rascal.Conf where
 
 import Data.Map            (Map, union, fromList)
-import Control.Monad       (liftM)
 import Data.Char           (isSpace)
 import Data.List           (dropWhileEnd)
 
@@ -12,13 +11,13 @@ type Key   = String
 type Value = String
 type Conf  = Map Key Value
 
--- |Reads a file and parses to a Map String String.
-readConfig :: FilePath -> IO Conf
-readConfig path = liftM parseConfig (readFile path)
-
--- |Parses a string into a list of Configuration types.
+-- |Parses a string into a Map String String
 parseConfig :: String -> Conf
-parseConfig = fromList . map getKeyValue . lines
+parseConfig = fromList . map getKeyValue . filter configLine . lines
+
+configLine :: String -> Bool
+configLine l =
+   not (null l) && head l /= '#' && (':' `elem` l || '=' `elem` l)
 
 -- |Turns a line into a key, value pair
 getKeyValue :: String -> (Key, Value)
@@ -37,7 +36,7 @@ getUserConfig fileName defaultOptions = do
    hasUserConf <- doesFileExist userConfFile
    if hasUserConf
    then do
-      userConf <- readConfig userConfFile
+      userConf <- readFile userConfFile
       -- |union will take left over right if key is defined twice
-      return $ userConf `union` defaultConf
+      return $ parseConfig userConf `union` defaultConf
    else return defaultConf
