@@ -17,10 +17,12 @@ import Network.Curl.Aeson  (curlAeson, noData, CurlAesonException)
 import Network.Curl.Opts   (CurlOption(CurlUserAgent))
 import System.Process      (readProcess)
 import System.Console.ANSI (clearLine)
+import Data.Map            (findWithDefault)
 
 import Rascal.Constants
 import Rascal.Utils
 import Rascal.Types
+import Rascal.Conf
 
 -- we do not use Show because we depend on an IO generated width
 showLink :: Link -> Int -> String
@@ -175,9 +177,15 @@ main = do
    hSetBuffering stdin NoBuffering
    args <- getArgs
    columns <- readProcess "tput" ["cols"] []
-   list <- getListing "new" $ if length args == 1 then head args else "haskell"
-   let width = read columns in
-      displayListing list width >> loop list width
+   conf <- getUserConfig ".rascalrc" defaultConf
+   let width = read columns
+       subreddit = findWithDefault "haskell" "subreddit" conf
+       linkSort = findWithDefault "new" "linkSort" conf
+       linkSort' = if linkSort `elem` map snd availableSorts
+                   then linkSort
+                   else "new"
+   list <- getListing linkSort' $ if length args == 1 then head args else subreddit
+   displayListing list width >> loop list width
 
 -- |show possible commands
 displayCommands :: Int -> IO ()

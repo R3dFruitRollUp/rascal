@@ -36,3 +36,8 @@ availableSorts = [
    ('h', "hot"),
    ('t', "top"),
    ('c', "controversial")]
+
+defaultConf :: [(String, String)]
+defaultConf = [
+   ("subreddit", "haskell"),
+   ("linkSort", "new")]

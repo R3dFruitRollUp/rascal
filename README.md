@@ -26,6 +26,15 @@ command line
 $ rascal python
 ```
 
+It is also possible to define the default subreddit and the default sort
+option in an INI-style configuration file named `.rascalrc` in your HOME
+directory. For instance, it might contain the following:
+
+```
+subreddit: programming
+linkSort = controversial
+```
+
 Here is what rascal looks like when started, and when a _self_ link (marked
 with a '♦') is chosen (`A` was pressed in this case). Non-self links and links
 detected in posts will be opened in your default browser.
