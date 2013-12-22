@@ -26,12 +26,18 @@ data Link = Link {
 
 newtype Listing = Listing [Link]
 
+emptyListing :: Listing
+emptyListing = Listing []
+
 data NamedListing = NamedListing {
    name :: String,
    listing :: Listing
 }
 
 newtype Comments = Comments [CommentListing] deriving (Show)
+
+emptyComments :: Comments
+emptyComments = Comments []
 
 newtype CommentListing = CommentListing [Comment] deriving (Show)
 

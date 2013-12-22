@@ -4,13 +4,14 @@
 -- MIT License, see LICENSE
 --
 
-import Control.Monad       (when)
+import Control.Monad       (when, unless)
+import Control.Applicative ((<$>))
 import Text.Printf         (printf)
 import System.Environment  (getArgs)
 import Data.Char           (ord)
 import Data.Maybe          (isJust)
 import System.IO
-import Control.Exception   (catch, handle)
+import Control.Exception   (catch)
 
 import Data.Aeson          (parseJSON)
 import Network.Curl.Aeson  (curlAeson, noData, CurlAesonException)
@@ -69,30 +70,32 @@ showCommentListing width prefix op (CommentListing cl) =
 -- |print a listing on screen and ask for a command
 displayListing :: NamedListing -> Int -> IO ()
 displayListing l w = do
-   catch
-      (putStrLn $ showListing l w)
-      handleCurlAesonException
+   putStrLn $ showListing l w
    displayCommands w
 
 -- |get posts according to selection in argument's subreddit as a listing
 getListing :: String -> String -> IO NamedListing
 getListing select subreddit = do
-   l <- let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
-                     "/" ++ select ++ ".json" in
-      curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
-   return $ NamedListing (subreddit ++ " -- " ++ select) l
+   let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
+                "/" ++ select ++ ".json"
+   NamedListing (subreddit ++ " -- " ++ select) <$> catch (do
+      l <- curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
+      seq l return l)
+      (handleCurlAesonException emptyListing)
 
 -- |print error message if there is a cURL exception
-handleCurlAesonException :: CurlAesonException -> IO ()
-handleCurlAesonException e = do
+-- TODO better error message, depending on e
+handleCurlAesonException :: a -> CurlAesonException -> IO a
+handleCurlAesonException x e = do
    putStrLn $ red ++ "Caught exception:" ++ reset
    print e
    putStrLn "maybe given subreddit does not exist…"
+   return x
 
 -- |open nth link in a listing in given width
 open :: NamedListing -> Int -> Int -> IO ()
 open nl n w =
-   handle handleCurlAesonException $ let (Listing l) = listing nl in
+   let (Listing l) = listing nl in
       -- n >= 0 by construction on call of open, but...
       when (0 <= n && n < length l) $ let ln = (l !! n) in
          if isSelf ln
@@ -126,16 +129,19 @@ openComments subreddit ln w =
       putStrLn ""
       let (Comments cll) = comm in
           -- the first is OriginalArticle, the length is always 2
-         mapM_ putStrLn $ showCommentListing w "" (author ln) (cll !! 1) -- ^FIXME handle error
+         unless (null cll) $
+            mapM_ putStrLn $ showCommentListing w "" (author ln) (cll !! 1)
       waitKey w
 
 -- |request comments for a given article
 -- TODO allow to change sort order
 getComments :: String -> String -> IO Comments
-getComments subreddit article =
+getComments subreddit article = do
    let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
-                "/comments/" ++ article ++ ".json?sort=new" in
-      curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
+                "/comments/" ++ article ++ ".json?sort=new"
+   catch (do
+      c <- curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
+      seq c return c) $ handleCurlAesonException emptyComments
 
 -- |open requested hrefs as urls and stop if anything else
 openRefs :: [String] -> Int -> IO ()
