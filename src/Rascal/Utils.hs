@@ -80,7 +80,7 @@ openUrl :: String -> Int -> IO ()
 openUrl u w = do
    message ("opening '" ++ u ++ "'…") w
    case os of
-    "darwin"  -> callProcess "open" [u]
+    "darwin"  -> callProcess "open" ["-g", u] -- ^open in the background
     "linux"   -> callProcess "xdg-open" [u, "&"] -- getEnv BROWSER ???
     "mingw32" -> callProcess "start" ["", u]
     _         -> return ()
