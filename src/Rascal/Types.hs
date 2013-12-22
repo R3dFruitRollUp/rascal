@@ -10,6 +10,7 @@ import Data.Vector         (toList)
 
 import Rascal.Utils        (unescape)
 
+-- | a reddit post, called Link in reddit's API documentation
 data Link = Link {
    title :: String,
    author :: String,

@@ -24,7 +24,7 @@ import Rascal.Utils
 import Rascal.Types
 import Rascal.Conf
 
--- we do not use Show because we depend on an IO generated width
+-- we do not use Show because we depend on (an IO generated) width
 showLink :: Link -> Int -> String
 showLink l width =
    let titlewidth = width - 34
@@ -151,27 +151,6 @@ showRefs :: [(Int, String)] -> [String]
 showRefs [] = []
 showRefs ((n, u):xs) =
    (" [" ++ yellow ++ show n ++ reset ++ "] " ++ blue ++ u ++ reset):showRefs xs
-
--- GET search
--- r/subreddit/search.json?syntax=plain&q=&sort=
-
--- GET subscribed
--- subreddits/mine/subscriber.json
-
--- POST login
--- https://ssl.reddit.com/api/login?api_type=json&user=&passwd=&rem=true
-
--- POST comment
--- api/comment?api_type=json&text=&thing=&uh=
-
--- POST save
--- api/(un)save?id=&uh=
-
--- POST submit
--- ...
-
--- POST vote
--- api/vote?id=&dir=&uh= (dir -1, 0, 1)
 
 main ::  IO ()
 main = do

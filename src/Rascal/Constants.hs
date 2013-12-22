@@ -37,6 +37,7 @@ availableSorts = [
    ('t', "top"),
    ('c', "controversial")]
 
+-- |default configuration options as an association list
 defaultConf :: [(String, String)]
 defaultConf = [
    ("subreddit", "haskell"),

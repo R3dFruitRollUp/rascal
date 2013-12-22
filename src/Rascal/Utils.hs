@@ -39,9 +39,8 @@ makeCmd acc (s, sort) =
 getFullSort :: Char -> Maybe String
 getFullSort = (`lookup` availableSorts)
 
--- |add a block indent on the left for a string to be printed in given width
--- for each n, 2 spaces are added. Note, because of unlines, a \n ends each
--- line
+-- |add a prefix (e.g. indent) on the left for a string to be printed in given
+-- width note, because of unlines, a \n ends each line
 indentString :: Int -> String -> String -> String
 indentString width prefix s =
    let lineLength = width - length prefix
