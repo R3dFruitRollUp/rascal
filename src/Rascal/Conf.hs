@@ -5,13 +5,17 @@
 -- config files
 --
 
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Rascal.Conf where
 
 import Data.Map            (Map, union, fromList)
 import Data.Char           (isSpace)
 import Data.List           (dropWhileEnd)
+import Control.Exception   (handle, IOException)
+import Control.Monad       (liftM)
 
-import System.Directory    (doesFileExist, getHomeDirectory)
+import System.Directory    (getHomeDirectory)
 import System.FilePath     ((</>))
 
 type Key   = String
@@ -45,10 +49,6 @@ getUserConfig fileName defaultOptions = do
    home <- getHomeDirectory
    let userConfFile = home </> fileName
        defaultConf = fromList defaultOptions
-   hasUserConf <- doesFileExist userConfFile
-   if hasUserConf
-   then do
-      userConf <- readFile userConfFile
+   handle (\(_ :: IOException) -> return defaultConf) $
       -- |union will take left over right if key is defined twice
-      return $ parseConfig userConf `union` defaultConf
-   else return defaultConf
+      liftM ((`union` defaultConf) . parseConfig) (readFile userConfFile)
