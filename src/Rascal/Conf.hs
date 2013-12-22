@@ -12,7 +12,7 @@ module Rascal.Conf where
 import Data.Map            (Map, union, fromList)
 import Data.Char           (isSpace)
 import Data.List           (dropWhileEnd)
-import Control.Exception   (handle, IOException)
+import Control.Exception   (handle)
 import Control.Monad       (liftM)
 
 import System.Directory    (getHomeDirectory)
@@ -49,6 +49,6 @@ getUserConfig fileName defaultOptions = do
    home <- getHomeDirectory
    let userConfFile = home </> fileName
        defaultConf = fromList defaultOptions
-   handle (\(_ :: IOException) -> return defaultConf) $
+   handle (\(_ :: IOError) -> return defaultConf) $
       -- |union will take left over right if key is defined twice
       liftM ((`union` defaultConf) . parseConfig) (readFile userConfFile)

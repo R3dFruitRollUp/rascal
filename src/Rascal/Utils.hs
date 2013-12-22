@@ -2,6 +2,7 @@
 module Rascal.Utils where
 
 import System.Info         (os)
+import Control.Exception   (handle)
 
 import System.Process      (callProcess)
 import System.Console.ANSI (clearLine)
@@ -79,8 +80,9 @@ waitKey w = do
 openUrl :: String -> Int -> IO ()
 openUrl u w = do
    message ("opening '" ++ u ++ "'…") w
-   case os of
-    "darwin"  -> callProcess "open" ["-g", u] -- ^open in the background
-    "linux"   -> callProcess "xdg-open" [u, "&"] -- getEnv BROWSER ???
-    "mingw32" -> callProcess "start" ["", u]
-    _         -> return ()
+   handle (\e -> print (e :: IOError)) $
+      case os of
+       "darwin"  -> callProcess "open" ["-g", u] -- ^open in the background
+       "linux"   -> callProcess "xdg-open" [u, "&"] -- getEnv BROWSER ???
+       "mingw32" -> callProcess "start" ["", u]
+       _         -> return ()
