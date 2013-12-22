@@ -34,16 +34,16 @@ showLink l width =
               else " "
        color = if score l == 0
                then blue
-               else red in
-      let format = printf " %%s%%3d%%s%%s %%-%d.%ds  %%20.20s  %%s%%3d%%s "
-                   titlewidth titlewidth in
-         printf format color (score l) self reset (title l) (author l)
-                magenta (numComments l) reset
+               else red
+       format = printf " %%s%%3d%%s%%s %%-%d.%ds  %%20.20s  %%s%%3d%%s "
+                titlewidth titlewidth
+   in printf format color (score l) self reset (title l) (author l)
+      magenta (numComments l) reset
 
 showListing :: NamedListing -> Int -> String
 showListing l width =
-   let (Listing links) = listing l in
-      bold ++ "\n--=| /r/" ++ name l ++ " |=--\n\n" ++ reset ++
+   let (Listing links) = listing l
+   in bold ++ "\n--=| /r/" ++ name l ++ " |=--\n\n" ++ reset ++
       -- the -4 comes from letterizeLines
       letterizeLines (map (`showLink` (width - 4)) links)
 
@@ -53,12 +53,12 @@ showComment width prefix addedPrefix futurePrefix op c =
        author' = if cauthor c == op
                  then green ++ cauthor c ++ reset
                  else cauthor c
-       initialIndent = indentString width prefix $ printf
-         "%s─ %.20s (%s%d%s|%s%d%s)" addedPrefix author' red (ups c)
-         reset blue (downs c) reset
-       commentBlock = indentString width prefix' (unescape (body c)) in
-      (prefix ++ "│ "):(initialIndent ++ init commentBlock):
-         showCommentListing width prefix' op (children c)
+       header = printf "%s─ %.20s (%s%d%s|%s%d%s)" addedPrefix author' red
+         (ups c) reset blue (downs c) reset
+       headerBlock = indentString width prefix header
+       commentBlock = indentString width prefix' (unescape (body c))
+   in (prefix ++ "│ "):(headerBlock ++ init commentBlock):
+      showCommentListing width prefix' op (children c)
 
 showCommentListing :: Int -> String -> String -> CommentListing -> [String]
 showCommentListing width prefix op (CommentListing cl) =
@@ -78,9 +78,10 @@ getListing :: String -> String -> IO NamedListing
 getListing select subreddit = do
    let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
                 "/" ++ select ++ ".json"
-   NamedListing (subreddit ++ " -- " ++ select) <$> catch (do
-      l <- curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
-      seq l return l)
+   NamedListing (subreddit ++ " -- " ++ select) <$> catch
+      (do
+         l <- curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
+         seq l return l)
       (handleCurlAesonException emptyListing)
 
 -- |print error message if there is a cURL exception
@@ -95,14 +96,15 @@ handleCurlAesonException x e = do
 -- |open nth link in a listing in given width
 open :: NamedListing -> Int -> Int -> IO ()
 open nl n w =
-   let (Listing l) = listing nl in
-      -- n >= 0 by construction on call of open, but...
-      when (0 <= n && n < length l) $ let ln = (l !! n) in
-         if isSelf ln
+   let (Listing l) = listing nl
+   -- n >= 0 by construction on call of open, but...
+   in when (0 <= n && n < length l) $
+      let ln = (l !! n)
+      in if isSelf ln
          then do
             openSelf ln w
-            let subreddit = takeWhile (/=' ') (name nl) in
-               openComments subreddit ln w
+            let subreddit = takeWhile (/=' ') (name nl)
+            openComments subreddit ln w
             displayListing nl w
          else
             openUrl (link ln) w
@@ -112,14 +114,14 @@ openSelf :: Link -> Int -> IO ()
 openSelf ln w = do
    message "" w
    putStrLn $ unescape (selfText ln)
-   let refs = hrefs (selfHtml ln) in
-      if null refs
-      then waitKey w
-      else do
-         putStr "\n"
-         mapM_ putStrLn $ showRefs $ zip [1..] refs
-         message "press link number to open or a key to continue" w
-         openRefs refs w
+   let refs = hrefs (selfHtml ln)
+   if null refs
+   then waitKey w
+   else do
+      putStr "\n"
+      mapM_ putStrLn $ showRefs $ zip [1..] refs
+      message "press link number to open or a key to continue" w
+      openRefs refs w
 
 -- |display all comments of an article in a subreddit
 openComments :: String -> Link -> Int -> IO ()
@@ -127,10 +129,10 @@ openComments subreddit ln w =
    when (numComments ln > 0) $ do
       comm <- getComments subreddit (drop 3 (uid ln))
       putStrLn ""
-      let (Comments cll) = comm in
-          -- the first is OriginalArticle, the length is always 2
-         unless (null cll) $
-            mapM_ putStrLn $ showCommentListing w "" (author ln) (cll !! 1)
+      let (Comments cll) = comm
+       -- the first is OriginalArticle, the length is always 2
+      unless (null cll) $
+         mapM_ putStrLn $ showCommentListing w "" (author ln) (cll !! 1)
       waitKey w
 
 -- |request comments for a given article
@@ -148,10 +150,10 @@ openRefs :: [String] -> Int -> IO ()
 openRefs l w = do
    c <- getChar
    clearLine
-   let n = ord c - ord '1' in
-      when (0 <= n && n < length l) $ do
-         openUrl (l !! n) w
-         openRefs l w
+   let n = ord c - ord '1'
+   when (0 <= n && n < length l) $ do
+      openUrl (l !! n) w
+      openRefs l w
 
 showRefs :: [(Int, String)] -> [String]
 showRefs [] = []
@@ -194,8 +196,8 @@ loop l w = do
          loop list w
       -- is this one of the sort options?
       x | isJust (getFullSort x) -> do
-         list <- let (Just sort) = getFullSort x in
-            getListing sort $ takeWhile (/=' ') $ name l
+         list <- let (Just sort) = getFullSort x
+                in getListing sort $ takeWhile (/=' ') $ name l
          displayListing list w
          loop list w
       -- 25 elements displayed max

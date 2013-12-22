@@ -32,13 +32,15 @@ bold = setSGRCode [SetConsoleIntensity BoldIntensity]
 -- |available sort options
 availableSorts :: [(Char, String)]
 availableSorts = [
-   ('n', "new"),
-   ('h', "hot"),
-   ('t', "top"),
-   ('c', "controversial")]
+     ('n', "new")
+   , ('h', "hot")
+   , ('t', "top")
+   , ('c', "controversial")
+   ]
 
 -- |default configuration options as an association list
 defaultConf :: [(String, String)]
 defaultConf = [
-   ("subreddit", "haskell"),
-   ("linkSort", "new")]
+     ("subreddit", "haskell")
+   , ("linkSort", "new")
+   ]

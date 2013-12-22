@@ -26,8 +26,8 @@ unescape (x:xs) = x:unescape xs
 -- |extract links from some HTML
 hrefs :: String -> [String]
 hrefs ('h':'r':'e':'f':'=':'"':s) =
-   let (u, r) = break (== '"') s in
-      (u:hrefs r)
+   let (u, r) = break (== '"') s
+   in (u:hrefs r)
 hrefs (_:xs) = hrefs xs
 hrefs "" = []
 
@@ -45,14 +45,14 @@ getFullSort = (`lookup` availableSorts)
 indentString :: Int -> String -> String -> String
 indentString width prefix s =
    let lineLength = width - length prefix
-       strings = concatMap (splitAt' lineLength) (lines s) in
-      unlines $ map (prefix ++) strings
+       strings = concatMap (splitAt' lineLength) (lines s)
+   in unlines $ map (prefix ++) strings
 
 -- |split a string to a list of substring of length <= n
 splitAt' :: Int -> String -> [String]
 splitAt' n s =
-   let (s1, s2) = splitAt n s in
-      if null s2
+   let (s1, s2) = splitAt n s
+   in if null s2
       then [s1]
       else s1:splitAt' n s2
 
@@ -63,7 +63,8 @@ message s w =
        msg = if null s
              then col
              else "--[" ++ cyan ++ s ++ reset ++ "]"
-       l = length msg - length col in do
+       l = length msg - length col
+   in do
       putStrLn ""
       putStr msg
       putStrLn $ replicate (w - l) '-'

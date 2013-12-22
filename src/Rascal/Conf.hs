@@ -35,8 +35,8 @@ configLine l =
 -- |Turns a line into a key, value pair
 getKeyValue :: String -> (Key, Value)
 getKeyValue line =
-   let (key, _:value) = break (`elem` ":=") line in
-      (stripWhite key, stripWhite value)
+   let (key, _:value) = break (`elem` ":=") line
+   in (stripWhite key, stripWhite value)
 
 -- |drop leading and ending white space
 stripWhite :: String -> String
