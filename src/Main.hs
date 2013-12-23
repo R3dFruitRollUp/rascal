@@ -48,17 +48,21 @@ showListing l width =
       letterizeLines (map (`showLink` (width - 4)) links)
 
 showComment :: Int -> String -> String -> String -> String -> Comment -> [String]
-showComment width prefix addedPrefix futurePrefix op c =
+showComment width prefix addedPrefix futurePrefix op
+   (Comment cauthor ups downs _ body children) =
    let prefix' = prefix ++ futurePrefix
-       author' = if cauthor c == op
-                 then green ++ cauthor c ++ reset
-                 else cauthor c
+       author' = if cauthor == op
+                 then green ++ cauthor ++ reset
+                 else cauthor
        header = printf "%s─ %.20s (%s%d%s|%s%d%s)" addedPrefix author' red
-         (ups c) reset blue (downs c) reset
+         ups reset blue downs reset
        headerBlock = indentString width prefix header
-       commentBlock = indentString width prefix' (unescape (body c))
+       commentBlock = indentString width prefix' (unescape body)
    in (prefix ++ "│ "):(headerBlock ++ init commentBlock):
-      showCommentListing width prefix' op (children c)
+      showCommentListing width prefix' op children
+
+showComment _ _ _ _ _ OriginalArticle =
+   []
 
 showCommentListing :: Int -> String -> String -> CommentListing -> [String]
 showCommentListing width prefix op (CommentListing cl) =
@@ -95,19 +99,18 @@ handleCurlAesonException x e = do
 
 -- |open nth link in a listing in given width
 open :: NamedListing -> Int -> Int -> IO ()
-open nl n w =
-   let (Listing l) = listing nl
+open nl@(NamedListing _ (Listing l)) n w =
    -- n >= 0 by construction on call of open, but...
-   in when (0 <= n && n < length l) $
-      let ln = (l !! n)
-      in if isSelf ln
-         then do
-            openSelf ln w
-            let subreddit = takeWhile (/=' ') (name nl)
-            openComments subreddit ln w
-            displayListing nl w
-         else
-            openUrl (link ln) w
+   when (0 <= n && n < length l) $
+   let ln = (l !! n)
+   in if isSelf ln
+      then do
+         openSelf ln w
+         let subreddit = takeWhile (/=' ') (name nl)
+         openComments subreddit ln w
+         displayListing nl w
+      else
+         openUrl (link ln) w
 
 -- |display a self link, with its contained hrefs
 openSelf :: Link -> Int -> IO ()
@@ -127,9 +130,8 @@ openSelf ln w = do
 openComments :: String -> Link -> Int -> IO ()
 openComments subreddit ln w =
    when (numComments ln > 0) $ do
-      comm <- getComments subreddit (drop 3 (uid ln))
+      (Comments cll) <- getComments subreddit (drop 3 (uid ln))
       putStrLn ""
-      let (Comments cll) = comm
        -- the first is OriginalArticle, the length is always 2
       unless (null cll) $
          mapM_ putStrLn $ showCommentListing w "" (author ln) (cll !! 1)

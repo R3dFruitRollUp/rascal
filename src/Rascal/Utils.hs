@@ -71,8 +71,8 @@ message s w =
 
 -- |wait for a key press
 waitKey :: Int -> IO ()
-waitKey w = do
-   message "press a key to continue" w
+waitKey width = do
+   message "press a key to continue" width
    _ <- getChar
    clearLine
    return ()

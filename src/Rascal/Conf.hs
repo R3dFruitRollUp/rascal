@@ -40,7 +40,8 @@ getKeyValue line =
 
 -- |drop leading and ending white space
 stripWhite :: String -> String
-stripWhite = dropWhile isSpace . dropWhileEnd isSpace
+stripWhite =
+   dropWhile isSpace . dropWhileEnd isSpace
 
 -- |search for fileName in the user's home directory and combine it with
 -- default options to provide a Conf map

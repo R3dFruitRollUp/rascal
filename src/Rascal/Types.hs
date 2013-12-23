@@ -42,14 +42,14 @@ emptyComments = Comments []
 newtype CommentListing = CommentListing [Comment] deriving (Show)
 
 data Comment = Comment {
-   cauthor :: String,
-   ups :: Int,
-   downs :: Int,
+   _cauthor :: String,
+   _ups :: Int,
+   _downs :: Int,
    -- created :: Int,
    -- edited :: Int (or false),
-   _bodyHtml :: String,
-   body :: String,
-   children :: CommentListing
+   __bodyHtml :: String,
+   _body :: String,
+   _children :: CommentListing
 } | OriginalArticle deriving (Show)
 
 -- |json parser for 'Link'
