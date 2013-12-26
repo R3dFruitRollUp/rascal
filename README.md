@@ -33,6 +33,7 @@ directory. For instance, it might contain the following:
 ```
 subreddit: programming
 linkSort = controversial
+commentSort: new
 ```
 
 Here is what rascal looks like when started, and when a _self_ link (marked
