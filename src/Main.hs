@@ -18,7 +18,7 @@ import Network.Curl.Aeson  (curlAeson, noData, CurlAesonException)
 import Network.Curl.Opts   (CurlOption(CurlUserAgent))
 import System.Process      (readProcess)
 import System.Console.ANSI (clearLine)
-import Data.Map            (findWithDefault)
+import Data.Map            ((!))
 
 import Rascal.Constants
 import Rascal.Utils
@@ -80,9 +80,12 @@ displayListing l w = do
 -- |get posts according to selection in argument's subreddit as a listing
 getListing :: String -> String -> IO NamedListing
 getListing select subreddit = do
-   let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
-                "/" ++ select ++ ".json"
-   NamedListing (subreddit ++ " -- " ++ select) <$> catch
+   let select' = if select `notElem` map snd availableSorts
+                 then snd . head $ availableSorts
+                 else select
+       apiurl = "http://www.reddit.com/r/" ++ subreddit ++
+                "/" ++ select' ++ ".json"
+   NamedListing (subreddit ++ " -- " ++ select') <$> catch
       (do
          l <- curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
          seq l return l)
@@ -102,15 +105,16 @@ open :: NamedListing -> Int -> Int -> IO ()
 open nl@(NamedListing _ (Listing l)) n w =
    -- n >= 0 by construction on call of open, but...
    when (0 <= n && n < length l) $
-   let ln = (l !! n)
-   in if isSelf ln
-      then do
-         openSelf ln w
+      let ln = (l !! n)
+      in do
+         if isSelf ln
+         then
+            openSelf ln w
+         else
+            openUrl (link ln) w
          let subreddit = takeWhile (/=' ') (name nl)
          openComments subreddit ln w
          displayListing nl w
-      else
-         openUrl (link ln) w
 
 -- |display a self link, with its contained hrefs
 openSelf :: Link -> Int -> IO ()
@@ -169,13 +173,13 @@ main = do
    columns <- readProcess "tput" ["cols"] []
    conf <- getUserConfig ".rascalrc" defaultConf
    let width = read columns
-       subreddit = findWithDefault "haskell" "subreddit" conf
-       linkSort = findWithDefault "new" "linkSort" conf
-       linkSort' = if linkSort `elem` map snd availableSorts
-                   then linkSort
-                   else "new"
-   list <- getListing linkSort' $ if length args == 1 then head args else subreddit
-   displayListing list width >> loop list width
+       subreddit = if length args == 1
+                   then head args
+                   else conf ! "subreddit"
+       linkSort  = conf ! "linkSort"
+   list <- getListing linkSort subreddit
+   displayListing list width
+   loop list width
 
 -- |show possible commands
 displayCommands :: Int -> IO ()
