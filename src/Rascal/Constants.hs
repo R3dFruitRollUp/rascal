@@ -43,4 +43,5 @@ defaultConf :: [(String, String)]
 defaultConf = [
      ("subreddit", "haskell")
    , ("linkSort", "new")
+   , ("commentSort", "new")
    ]

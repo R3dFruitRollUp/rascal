@@ -101,8 +101,8 @@ handleCurlAesonException x e = do
    return x
 
 -- |open nth link in a listing in given width
-open :: NamedListing -> Int -> Int -> IO ()
-open nl@(NamedListing _ (Listing l)) n w =
+open :: NamedListing -> Int -> Int -> String -> IO ()
+open nl@(NamedListing _ (Listing l)) n w cs =
    -- n >= 0 by construction on call of open, but...
    when (0 <= n && n < length l) $
       let ln = (l !! n)
@@ -113,7 +113,7 @@ open nl@(NamedListing _ (Listing l)) n w =
          else
             openUrl (link ln) w
          let subreddit = takeWhile (/=' ') (name nl)
-         openComments subreddit ln w
+         openComments subreddit ln w cs
          displayListing nl w
 
 -- |display a self link, with its contained hrefs
@@ -131,10 +131,10 @@ openSelf ln w = do
       openRefs refs w
 
 -- |display all comments of an article in a subreddit
-openComments :: String -> Link -> Int -> IO ()
-openComments subreddit ln w =
+openComments :: String -> Link -> Int -> String -> IO ()
+openComments subreddit ln w csort =
    when (numComments ln > 0) $ do
-      (Comments cll) <- getComments subreddit (drop 3 (uid ln))
+      (Comments cll) <- getComments subreddit (drop 3 (uid ln)) csort
       putStrLn ""
        -- the first is OriginalArticle, the length is always 2
       unless (null cll) $
@@ -142,11 +142,13 @@ openComments subreddit ln w =
       waitKey w
 
 -- |request comments for a given article
--- TODO allow to change sort order
-getComments :: String -> String -> IO Comments
-getComments subreddit article = do
-   let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
-                "/comments/" ++ article ++ ".json?sort=new"
+getComments :: String -> String -> String -> IO Comments
+getComments subreddit article csort = do
+   let select = if csort `notElem` map snd availableSorts
+                then snd . head $ availableSorts
+                else csort
+       apiurl = "http://www.reddit.com/r/" ++ subreddit ++
+                "/comments/" ++ article ++ ".json?sort=" ++ select
    catch (do
       c <- curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
       seq c return c) $ handleCurlAesonException emptyComments
@@ -177,9 +179,10 @@ main = do
                    then head args
                    else conf ! "subreddit"
        linkSort  = conf ! "linkSort"
+       commentSort  = conf ! "commentSort"
    list <- getListing linkSort subreddit
    displayListing list width
-   loop list width
+   loop list width commentSort
 
 -- |show possible commands
 displayCommands :: Int -> IO ()
@@ -187,8 +190,8 @@ displayCommands =
    message $ foldl makeCmd "" availableSorts ++ "⟨s⟩witch subreddit/open ⟨A-Y⟩"
 
 -- |main event loop
-loop :: NamedListing -> Int -> IO ()
-loop l w = do
+loop :: NamedListing -> Int -> String -> IO ()
+loop l w cs = do
    cmd <- getChar
    clearLine
    case cmd of
@@ -199,15 +202,15 @@ loop l w = do
          subreddit <- getLine
          list <- getListing "new" subreddit
          displayListing list w
-         loop list w
+         loop list w cs
       -- is this one of the sort options?
       x | isJust (getFullSort x) -> do
          list <- let (Just sort) = getFullSort x
                 in getListing sort $ takeWhile (/=' ') $ name l
          displayListing list w
-         loop list w
+         loop list w cs
       -- 25 elements displayed max
         | x `elem` ['A'..'Y'] -> do
-         open l (ord x - ord 'A') w
-         loop l w
+         open l (ord x - ord 'A') w cs
+         loop l w cs
       _ -> return ()
