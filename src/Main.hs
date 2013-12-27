@@ -11,9 +11,9 @@ import System.Environment  (getArgs)
 import Data.Char           (ord)
 import Data.Maybe          (isJust)
 import System.IO
-import Control.Exception   (catch)
+import Control.Exception   (handle)
 
-import Data.Aeson          (parseJSON)
+import Data.Aeson          (parseJSON, FromJSON)
 import Network.Curl.Aeson  (curlAeson, noData, CurlAesonException)
 import Network.Curl.Opts   (CurlOption(CurlUserAgent))
 import System.Process      (readProcess)
@@ -76,17 +76,22 @@ displayListing l w = do
 
 -- |get posts according to selection in argument's subreddit as a listing
 getListing :: String -> String -> IO NamedListing
-getListing select subreddit = do
-   let select' = if select `notElem` map snd availableSorts
-                 then snd . head $ availableSorts
-                 else select
-       apiurl = "http://www.reddit.com/r/" ++ subreddit ++
-                "/" ++ select' ++ ".json"
-   NamedListing (subreddit ++ " -- " ++ select') <$> catch
-      (do
-         l <- curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
-         return $! l)
-      (handleCurlAesonException emptyListing)
+getListing select subreddit =
+   let apiurl = "http://www.reddit.com/r/" ++ subreddit ++ "/%s.json"
+   in NamedListing (subreddit ++ " -- " ++ select) <$>
+      getThing apiurl select emptyListing
+
+-- |get posts or comments from an apiurl, a sort order and a default in case
+-- of error
+getThing :: FromJSON a => String -> String -> a -> IO a
+getThing apiurl sort emptyThing =
+   let sort' = if sort `notElem` map snd availableSorts
+               then snd . head $ availableSorts
+               else sort
+       apiurl' = printf apiurl sort'
+   in handle (handleCurlAesonException emptyThing) $ do
+         l <- curlAeson parseJSON "GET" apiurl' [CurlUserAgent userAgent] noData
+         return $! l
 
 -- |print error message if there is a cURL exception
 -- TODO better error message, depending on e
@@ -138,15 +143,10 @@ openComments subreddit ln w csort =
 
 -- |request comments for a given article
 getComments :: String -> String -> String -> IO Comments
-getComments subreddit article csort = do
-   let select = if csort `notElem` map snd availableSorts
-                then snd . head $ availableSorts
-                else csort
-       apiurl = "http://www.reddit.com/r/" ++ subreddit ++
-                "/comments/" ++ article ++ ".json?sort=" ++ select
-   catch (do
-      c <- curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
-      return $! c) $ handleCurlAesonException emptyComments
+getComments subreddit article csort =
+   let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
+                "/comments/" ++ article ++ ".json?sort=%s"
+   in getThing apiurl csort emptyComments
 
 -- |open requested hrefs as urls and stop if anything else
 openRefs :: [String] -> Int -> IO ()
