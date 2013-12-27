@@ -17,8 +17,9 @@ import System.IO
 import Control.Exception      (handle)
 
 import Data.Aeson             (parseJSON, FromJSON)
-import Network.Curl.Aeson     (curlAeson, noData, CurlAesonException, errorMsg)
+import Network.Curl.Aeson     (curlAeson, noData, CurlAesonException, errorMsg, curlCode)
 import Network.Curl.Opts      (CurlOption(CurlUserAgent))
+import Network.Curl.Code      (CurlCode(CurlOK))
 import System.Process         (readProcess)
 import System.Console.ANSI    (clearLine)
 import Data.Map               ((!))
@@ -104,12 +105,11 @@ getThing apiurl sort emptyThing =
          return $! l
 
 -- |print error message if there is a cURL exception
--- TODO better error message, depending on curlCode e
 handleCurlAesonException :: a -> CurlAesonException -> IO a
 handleCurlAesonException x e = do
    putStrLn $ red ++ "Caught exception: " ++ reset ++ errorMsg e
-   putStrLn "(Note that a JSON parsing error might indicate a non-existing subreddit)"
-   print e
+   when (curlCode e == CurlOK) $
+      putStrLn "(Might indicate a non-existing subreddit)"
    return x
 
 -- |open nth link in a listing in given width
