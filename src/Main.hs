@@ -117,25 +117,28 @@ open nl@(NamedListing _ (Listing l)) n = do
           w = textWidth conf
           subreddit = takeWhile (/=' ') (name nl)
       in do
-         liftIO $ if isSelf ln
-                  then openSelf ln w
-                  else openUrl (link ln) w
+         if isSelf ln
+         then openSelf ln
+         else liftIO $ openUrl (link ln) w
          openComments subreddit ln
          displayListing nl
 
 -- |display a self link, with its contained hrefs
-openSelf :: Link -> Int -> IO ()
-openSelf ln w = do
-   message "" w
-   putStrLn $ unescape (selfText ln)
+openSelf :: Link -> ReaderT RuntimeConf IO ()
+openSelf ln = do
+   conf <- ask
    let refs = hrefs (selfHtml ln)
-   if null refs
-   then waitKey w
-   else do
-      putStr "\n"
-      mapM_ putStrLn $ showRefs $ zip [1..] refs
-      message "press link number to open or a key to continue" w
-      openRefs refs w
+       w = textWidth conf
+   liftIO $ do
+      message "" w
+      putStrLn $ unescape (selfText ln)
+      if null refs
+      then waitKey w
+      else do
+         putStr "\n"
+         mapM_ putStrLn $ showRefs $ zip [1..] refs
+         message "press link number to open or a key to continue" w
+         openRefs refs w
 
 -- |display all comments of an article in a subreddit
 openComments :: String -> Link -> ReaderT RuntimeConf IO ()
