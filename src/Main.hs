@@ -11,12 +11,13 @@ import Control.Applicative    ((<$>))
 import Text.Printf            (printf)
 import System.Environment     (getArgs)
 import Data.Char              (ord)
+import Data.List              (intercalate)
 import Data.Maybe             (isJust)
 import System.IO
 import Control.Exception      (handle)
 
 import Data.Aeson             (parseJSON, FromJSON)
-import Network.Curl.Aeson     (curlAeson, noData, CurlAesonException)
+import Network.Curl.Aeson     (curlAeson, noData, CurlAesonException, errorMsg)
 import Network.Curl.Opts      (CurlOption(CurlUserAgent))
 import System.Process         (readProcess)
 import System.Console.ANSI    (clearLine)
@@ -28,6 +29,7 @@ import Rascal.Types
 import Rascal.Conf
 
 -- we do not use Show because we depend on (an IO generated) width
+-- TODO test
 showLink :: Link -> Int -> String
 showLink l width =
    let titlewidth = width - 34
@@ -40,6 +42,7 @@ showLink l width =
    in printf format color (score l) self reset (title l) (author l)
       magenta (numComments l) reset
 
+-- TODO test
 showListing :: NamedListing -> Int -> String
 showListing l width =
    let (Listing links) = listing l
@@ -47,6 +50,7 @@ showListing l width =
       -- the -4 comes from letterizeLines
       letterizeLines (map (`showLink` (width - 4)) links)
 
+-- TODO test
 showComment :: Int -> String -> String -> String -> String -> Comment -> [String]
 showComment width prefix addedPrefix futurePrefix op
    (Comment cauthor ups downs _ body children) =
@@ -63,6 +67,7 @@ showComment width prefix addedPrefix futurePrefix op
 showComment _ _ _ _ _ OriginalArticle =
    []
 
+-- TODO test
 showCommentListing :: Int -> String -> String -> CommentListing -> [String]
 showCommentListing width prefix op (CommentListing cl) =
    case cl of
@@ -99,12 +104,12 @@ getThing apiurl sort emptyThing =
          return $! l
 
 -- |print error message if there is a cURL exception
--- TODO better error message, depending on e
+-- TODO better error message, depending on curlCode e
 handleCurlAesonException :: a -> CurlAesonException -> IO a
 handleCurlAesonException x e = do
-   putStrLn $ red ++ "Caught exception:" ++ reset
+   putStrLn $ red ++ "Caught exception: " ++ reset ++ errorMsg e
+   putStrLn "(Note that a JSON parsing error might indicate a non-existing subreddit)"
    print e
-   putStrLn "maybe given subreddit does not exist…"
    return x
 
 -- |open nth link in a listing in given width
@@ -136,7 +141,7 @@ openSelf ln = do
       then waitKey w
       else do
          putStr "\n"
-         mapM_ putStrLn $ showRefs $ zip [1..] refs
+         mapM_ (putStrLn . showRef) $ zip [1..] refs
          message "press link number to open or a key to continue" w
          openRefs refs w
 
@@ -171,11 +176,6 @@ openRefs l w = do
       openUrl (l !! n) w
       openRefs l w
 
-showRefs :: [(Int, String)] -> [String]
-showRefs [] = []
-showRefs ((n, u):xs) =
-   (" [" ++ yellow ++ show n ++ reset ++ "] " ++ blue ++ u ++ reset):showRefs xs
-
 main ::  IO ()
 main = do
    hSetBuffering stdin NoBuffering
@@ -194,7 +194,7 @@ main = do
 -- |show possible commands
 displayCommands :: Int -> IO ()
 displayCommands =
-   message $ foldl makeCmd "" availableSorts ++ "⟨s⟩witch subreddit/open ⟨A-Y⟩"
+   message $ intercalate "/" (map makeCmd availableSorts) ++ "/⟨s⟩witch subreddit/open ⟨A-Y⟩"
 
 -- |main event loop
 loop :: NamedListing -> ReaderT RuntimeConf IO ()

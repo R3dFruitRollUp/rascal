@@ -32,9 +32,10 @@ hrefs (_:xs) = hrefs xs
 hrefs "" = []
 
 -- |pretty print sort name with initial
-makeCmd :: String -> (Char, String) -> String
-makeCmd acc (s, sort) =
-   acc ++ ('⟨':s:'⟩':tail sort) ++ "/"
+makeCmd :: (Char, String) -> String
+makeCmd (c, cmd) | c `notElem` cmd = '⟨':c:'⟩':tail cmd
+                  | otherwise = let (hd, _:tl) = break (== c) cmd
+                                in hd ++ '⟨':c:'⟩':tl
 
 -- |get full sort name from initial
 getFullSort :: Char -> Maybe String
@@ -87,3 +88,7 @@ openUrl u w = do
        "linux"   -> callProcess "xdg-open" [u, "&"] -- getEnv BROWSER ???
        "mingw32" -> callProcess "start" ["", u]
        _         -> return ()
+
+showRef :: (Int, String) -> String
+showRef (n, u) =
+   " [" ++ yellow ++ show n ++ reset ++ "] " ++ blue ++ u ++ reset
