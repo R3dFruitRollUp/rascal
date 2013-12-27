@@ -103,3 +103,5 @@ instance FromJSON Comment where
       else
          return OriginalArticle
    parseJSON _ = empty
+
+data RuntimeConf = RuntimeConf {textWidth :: Int, commentSort :: String}

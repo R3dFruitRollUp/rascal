@@ -4,21 +4,23 @@
 -- MIT License, see LICENSE
 --
 
-import Control.Monad       (when, unless)
-import Control.Applicative ((<$>))
-import Text.Printf         (printf)
-import System.Environment  (getArgs)
-import Data.Char           (ord)
-import Data.Maybe          (isJust)
+import Control.Monad          (when, unless)
+import Control.Monad.Reader   (ReaderT, ask, runReaderT)
+import Control.Monad.Trans    (liftIO)
+import Control.Applicative    ((<$>))
+import Text.Printf            (printf)
+import System.Environment     (getArgs)
+import Data.Char              (ord)
+import Data.Maybe             (isJust)
 import System.IO
-import Control.Exception   (handle)
+import Control.Exception      (handle)
 
-import Data.Aeson          (parseJSON, FromJSON)
-import Network.Curl.Aeson  (curlAeson, noData, CurlAesonException)
-import Network.Curl.Opts   (CurlOption(CurlUserAgent))
-import System.Process      (readProcess)
-import System.Console.ANSI (clearLine)
-import Data.Map            ((!))
+import Data.Aeson             (parseJSON, FromJSON)
+import Network.Curl.Aeson     (curlAeson, noData, CurlAesonException)
+import Network.Curl.Opts      (CurlOption(CurlUserAgent))
+import System.Process         (readProcess)
+import System.Console.ANSI    (clearLine)
+import Data.Map               ((!))
 
 import Rascal.Constants
 import Rascal.Utils
@@ -69,10 +71,13 @@ showCommentListing width prefix op (CommentListing cl) =
           showComment width prefix "└" "  " op (last cl)
 
 -- |print a listing on screen and ask for a command
-displayListing :: NamedListing -> Int -> IO ()
-displayListing l w = do
-   putStrLn $ showListing l w
-   displayCommands w
+displayListing :: NamedListing -> ReaderT RuntimeConf IO ()
+displayListing l = do
+   conf <- ask
+   let w = textWidth conf
+   liftIO $ do
+      putStrLn $ showListing l w
+      displayCommands w
 
 -- |get posts according to selection in argument's subreddit as a listing
 getListing :: String -> String -> IO NamedListing
@@ -103,18 +108,20 @@ handleCurlAesonException x e = do
    return x
 
 -- |open nth link in a listing in given width
-open :: NamedListing -> Int -> Int -> String -> IO ()
-open nl@(NamedListing _ (Listing l)) n w cs =
+open :: NamedListing -> Int -> ReaderT RuntimeConf IO ()
+open nl@(NamedListing _ (Listing l)) n = do
+   conf <- ask
    -- n >= 0 by construction on call of open, but...
    when (0 <= n && n < length l) $
       let ln = (l !! n)
+          w = textWidth conf
+          subreddit = takeWhile (/=' ') (name nl)
       in do
-         if isSelf ln
-         then openSelf ln w
-         else openUrl (link ln) w
-         let subreddit = takeWhile (/=' ') (name nl)
-         openComments subreddit ln w cs
-         displayListing nl w
+         liftIO $ if isSelf ln
+                  then openSelf ln w
+                  else openUrl (link ln) w
+         openComments subreddit ln
+         displayListing nl
 
 -- |display a self link, with its contained hrefs
 openSelf :: Link -> Int -> IO ()
@@ -131,9 +138,12 @@ openSelf ln w = do
       openRefs refs w
 
 -- |display all comments of an article in a subreddit
-openComments :: String -> Link -> Int -> String -> IO ()
-openComments subreddit ln w csort =
-   when (numComments ln > 0) $ do
+openComments :: String -> Link -> ReaderT RuntimeConf IO ()
+openComments subreddit ln = do
+   conf <- ask
+   let w = textWidth conf
+       csort = commentSort conf
+   when (numComments ln > 0) $ liftIO $ do
       (Comments cll) <- getComments subreddit (drop 3 (uid ln)) csort
       putStrLn ""
        -- the first is OriginalArticle, the length is always 2
@@ -173,10 +183,10 @@ main = do
        subreddit | null args = conf ! "subreddit"
                  | otherwise = head args
        linkSort  = conf ! "linkSort"
-       commentSort  = conf ! "commentSort"
+       cSort  = conf ! "commentSort"
+       conf' = RuntimeConf width cSort
    list <- getListing linkSort subreddit
-   displayListing list width
-   loop list width commentSort
+   runReaderT (displayListing list >> loop list) conf'
 
 -- |show possible commands
 displayCommands :: Int -> IO ()
@@ -184,27 +194,27 @@ displayCommands =
    message $ foldl makeCmd "" availableSorts ++ "⟨s⟩witch subreddit/open ⟨A-Y⟩"
 
 -- |main event loop
-loop :: NamedListing -> Int -> String -> IO ()
-loop l w cs = do
-   cmd <- getChar
-   clearLine
+loop :: NamedListing -> ReaderT RuntimeConf IO ()
+loop l = do
+   cmd <- liftIO getChar
+   liftIO clearLine
    case cmd of
       's' -> do
-         putStrLn ""
-         putStr "subreddit to switch to: "
-         hFlush stdout
-         subreddit <- getLine
-         list <- getListing "new" subreddit
-         displayListing list w
-         loop list w cs
+         subreddit <- liftIO $ do
+            putStr "\nsubreddit to switch to: "
+            hFlush stdout
+            getLine
+         list <- liftIO $ getListing "new" subreddit
+         displayListing list
+         loop list
       -- is this one of the sort options?
       x | isJust (getFullSort x) -> do
          list <- let (Just sort) = getFullSort x
-                in getListing sort $ takeWhile (/=' ') $ name l
-         displayListing list w
-         loop list w cs
+                in liftIO $ getListing sort $ takeWhile (/=' ') $ name l
+         displayListing list
+         loop list
       -- 25 elements displayed max
         | x `elem` ['A'..'Y'] -> do
-         open l (ord x - ord 'A') w cs
-         loop l w cs
+         open l (ord x - ord 'A')
+         loop l
       _ -> return ()
