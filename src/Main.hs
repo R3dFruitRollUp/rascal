@@ -88,7 +88,7 @@ getListing select subreddit = do
    NamedListing (subreddit ++ " -- " ++ select') <$> catch
       (do
          l <- curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
-         seq l return l)
+         return $! l)
       (handleCurlAesonException emptyListing)
 
 -- |print error message if there is a cURL exception
@@ -151,7 +151,7 @@ getComments subreddit article csort = do
                 "/comments/" ++ article ++ ".json?sort=" ++ select
    catch (do
       c <- curlAeson parseJSON "GET" apiurl [CurlUserAgent userAgent] noData
-      seq c return c) $ handleCurlAesonException emptyComments
+      return $! c) $ handleCurlAesonException emptyComments
 
 -- |open requested hrefs as urls and stop if anything else
 openRefs :: [String] -> Int -> IO ()
