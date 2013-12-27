@@ -29,12 +29,10 @@ import Rascal.Conf
 showLink :: Link -> Int -> String
 showLink l width =
    let titlewidth = width - 34
-       self = if isSelf l
-              then green ++ "♦"
-              else " "
-       color = if score l == 0
-               then blue
-               else red
+       self | isSelf l = green ++ "♦"
+            | otherwise = " "
+       color | score l == 0 = blue
+             | otherwise = red
        format = printf " %%s%%3d%%s%%s %%-%d.%ds  %%20.20s  %%s%%3d%%s "
                 titlewidth titlewidth
    in printf format color (score l) self reset (title l) (author l)
@@ -51,9 +49,8 @@ showComment :: Int -> String -> String -> String -> String -> Comment -> [String
 showComment width prefix addedPrefix futurePrefix op
    (Comment cauthor ups downs _ body children) =
    let prefix' = prefix ++ futurePrefix
-       author' = if cauthor == op
-                 then green ++ cauthor ++ reset
-                 else cauthor
+       author' | cauthor == op = green ++ cauthor ++ reset
+               | otherwise = cauthor
        header = printf "%s─ %.20s (%s%d%s|%s%d%s)" addedPrefix author' red
          ups reset blue downs reset
        headerBlock = indentString width prefix header
@@ -108,10 +105,8 @@ open nl@(NamedListing _ (Listing l)) n w cs =
       let ln = (l !! n)
       in do
          if isSelf ln
-         then
-            openSelf ln w
-         else
-            openUrl (link ln) w
+         then openSelf ln w
+         else openUrl (link ln) w
          let subreddit = takeWhile (/=' ') (name nl)
          openComments subreddit ln w cs
          displayListing nl w
@@ -175,9 +170,8 @@ main = do
    columns <- readProcess "tput" ["cols"] []
    conf <- getUserConfig ".rascalrc" defaultConf
    let width = read columns
-       subreddit = if length args == 1
-                   then head args
-                   else conf ! "subreddit"
+       subreddit | null args = conf ! "subreddit"
+                 | otherwise = head args
        linkSort  = conf ! "linkSort"
        commentSort  = conf ! "commentSort"
    list <- getListing linkSort subreddit
