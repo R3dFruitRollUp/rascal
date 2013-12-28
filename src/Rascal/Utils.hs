@@ -31,11 +31,11 @@ hrefs ('h':'r':'e':'f':'=':'"':s) =
 hrefs (_:xs) = hrefs xs
 hrefs "" = []
 
--- |pretty print sort name with initial
+-- |pretty print sort name with initial or selected letter highlighted
 makeCmd :: (Char, String) -> String
 makeCmd (c, cmd) | c `notElem` cmd = '⟨':c:'⟩':tail cmd
-                  | otherwise = let (hd, _:tl) = break (== c) cmd
-                                in hd ++ '⟨':c:'⟩':tl
+                 | otherwise = let (hd, _:tl) = break (== c) cmd
+                               in hd ++ '⟨':c:'⟩':tl
 
 -- |get full sort name from initial
 getFullSort :: Char -> Maybe String

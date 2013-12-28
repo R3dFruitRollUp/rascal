@@ -41,16 +41,17 @@ emptyComments = Comments []
 
 newtype CommentListing = CommentListing [Comment] deriving (Show)
 
-data Comment = Comment {
-   _cauthor :: String,
-   _ups :: Int,
-   _downs :: Int,
-   -- created :: Int,
-   -- edited :: Int (or false),
-   __bodyHtml :: String,
-   _body :: String,
-   _children :: CommentListing
-} | OriginalArticle deriving (Show)
+data Comment = Comment
+   { _cauthor :: String
+   , _ups :: Int
+   , _downs :: Int
+   -- , created :: Int
+   -- , edited :: Int (or false)
+   , __bodyHtml :: String
+   , _body :: String
+   , _children :: CommentListing
+   }
+   | OriginalArticle deriving (Show)
 
 -- |json parser for 'Link'
 instance FromJSON Link where
@@ -104,4 +105,8 @@ instance FromJSON Comment where
          return OriginalArticle
    parseJSON _ = empty
 
-data RuntimeConf = RuntimeConf {textWidth :: Int, commentSort :: String}
+data RuntimeConf = RuntimeConf
+   { textWidth :: Int
+   , commentSort :: String
+   , linkSort :: String
+   }

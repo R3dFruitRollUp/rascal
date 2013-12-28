@@ -185,10 +185,10 @@ main = do
    let width = read columns
        subreddit | null args = conf ! "subreddit"
                  | otherwise = head args
-       linkSort  = conf ! "linkSort"
+       lSort  = conf ! "linkSort"
        cSort  = conf ! "commentSort"
-       conf' = RuntimeConf width cSort
-   list <- getListing linkSort subreddit
+       conf' = RuntimeConf width cSort lSort
+   list <- getListing lSort subreddit
    runReaderT (displayListing list >> loop list) conf'
 
 -- |show possible commands
@@ -201,13 +201,14 @@ loop :: NamedListing -> ReaderT RuntimeConf IO ()
 loop l = do
    cmd <- liftIO getChar
    liftIO clearLine
+   conf <- ask
    case cmd of
       's' -> do
          subreddit <- liftIO $ do
             putStr "\nsubreddit to switch to: "
             hFlush stdout
             getLine
-         list <- liftIO $ getListing "new" subreddit
+         list <- liftIO $ getListing (linkSort conf) subreddit
          displayListing list
          loop list
       -- is this one of the sort options?
