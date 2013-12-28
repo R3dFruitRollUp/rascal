@@ -137,7 +137,7 @@ openSelf ln = do
        w = textWidth conf
    liftIO $ do
       message "" w
-      putStrLn $ unescape (selfText ln)
+      putStrLn $ cleanUp (selfText ln) w
       if null refs
       then waitKey w
       else do

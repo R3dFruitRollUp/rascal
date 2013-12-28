@@ -3,6 +3,7 @@ module Rascal.Utils where
 
 import System.Info         (os)
 import Control.Exception   (handle)
+import Data.List           (elemIndices)
 
 import System.Process      (callProcess)
 import System.Console.ANSI (clearLine)
@@ -55,7 +56,21 @@ splitAt' n s =
    let (s1, s2) = splitAt n s
    in if null s2
       then [s1]
-      else s1:splitAt' n s2
+      else let (s1', s2') = splitAtLastSpace s1 s2
+           in s1':splitAt' n s2'
+
+splitAtLastSpace :: String -> String -> (String, String)
+splitAtLastSpace s1 s2 =
+   let spaces = elemIndices ' ' s1
+   in if null spaces
+      then (s1, s2)
+      else let (s1', _:s2') = splitAt (last spaces) s1
+           in (s1', s2' ++ s2)
+
+-- | unescape and add newlines in order not to cut words
+cleanUp :: String -> Int -> String
+cleanUp s w =
+      unlines (concatMap (splitAt' w) ((lines . unescape) s))
 
 -- |display an informative message
 message :: String -> Int -> IO ()
