@@ -28,12 +28,13 @@ $ rascal python
 
 It is also possible to define the default subreddit and the default sort
 option in an INI-style configuration file named `.rascalrc` in your HOME
-directory. For instance, it might contain the following:
+directory. For instance, it might contain the following (case-sensitive!):
 
 ```
 subreddit: programming
 linkSort = controversial
 commentSort: new
+pageComments = True
 ```
 
 Here is what rascal looks like when started, and when a _self_ link (marked

@@ -11,7 +11,7 @@ import Control.Applicative    ((<$>))
 import Text.Printf            (printf)
 import System.Environment     (getArgs)
 import Data.Char              (ord)
-import Data.List              (intercalate)
+import Data.List              (intercalate, elemIndices)
 import Data.Maybe             (isJust)
 import System.IO
 import Control.Exception      (handle)
@@ -101,15 +101,16 @@ getThing apiurl sort emptyThing =
                else sort
        apiurl' = printf apiurl sort'
    in handle (handleCurlAesonException emptyThing) $ do
-         l <- curlAeson parseJSON "GET" apiurl' [CurlUserAgent userAgent] noData
-         return $! l
+      l <- curlAeson parseJSON "GET" apiurl' [CurlUserAgent userAgent] noData
+      return $! l
 
 -- |print error message if there is a cURL exception
 handleCurlAesonException :: a -> CurlAesonException -> IO a
 handleCurlAesonException x e = do
    putStrLn $ red ++ "Caught exception: " ++ reset ++ errorMsg e
-   when (curlCode e == CurlOK) $
-      putStrLn "(Might indicate a non-existing subreddit)"
+   putStrLn $ if curlCode e == CurlOK
+              then "(Might indicate a non-existing subreddit)"
+              else "cURL code: " ++ (drop 4 . show . curlCode) e
    return x
 
 -- |open nth link in a listing in given width
@@ -155,9 +156,32 @@ openComments subreddit ln = do
       (Comments cll) <- getComments subreddit (drop 3 (uid ln)) csort
       putStrLn ""
        -- the first is OriginalArticle, the length is always 2
-      unless (null cll) $
-         mapM_ putStrLn $ showCommentListing w "" (author ln) (cll !! 1)
+      unless (null cll) $ do
+         let allComments = showCommentListing w "" (author ln) (cll !! 1)
+         if pageComments conf
+         then doPageComments (textHeight conf - 2) 0 w allComments
+         else mapM_ putStrLn allComments
       waitKey w
+
+doPageComments :: Int -> Int -> Int -> [String] -> IO ()
+doPageComments _ _ _ [] = return ()
+doPageComments _ _ _ [_] = return ()   -- ^ should not happen...
+doPageComments height shown w allComments@(a:b:remaining)
+   | shown > height = waitKey w >> doPageComments height 0 w allComments
+   | otherwise = do
+      let nbLines = 2 + sum (map (length . elemIndices '\n') [a, b])
+          empty = height - shown
+      shown' <- if empty > nbLines
+               then return shown
+               else do
+                  waitKey w
+                  -- '\b' is backspace, since even clearLine does not enforce
+                  -- clearing the key typed for input
+                  putStr "\b"
+                  return 0
+      putStrLn a
+      putStrLn b
+      doPageComments height (shown' + nbLines) w remaining
 
 -- |request comments for a given article
 getComments :: String -> String -> String -> IO Comments
@@ -181,13 +205,18 @@ main = do
    hSetBuffering stdin NoBuffering
    args <- getArgs
    columns <- readProcess "tput" ["cols"] []
+   nbLines <- readProcess "tput" ["lines"] []
    conf <- getUserConfig ".rascalrc" defaultConf
    let width = read columns
+       height = read nbLines
        subreddit | null args = conf ! "subreddit"
                  | otherwise = head args
        lSort  = conf ! "linkSort"
        cSort  = conf ! "commentSort"
-       conf' = RuntimeConf width cSort lSort
+       pComments = reads (conf ! "pageComments")
+       pComments' | null pComments = True    -- ^ TODO get from defaultConf
+                  | otherwise = fst $ head pComments
+       conf' = RuntimeConf width height cSort lSort pComments'
    list <- getListing lSort subreddit
    runReaderT (displayListing list >> loop list) conf'
 

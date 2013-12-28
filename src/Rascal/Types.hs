@@ -107,6 +107,8 @@ instance FromJSON Comment where
 
 data RuntimeConf = RuntimeConf
    { textWidth :: Int
+   , textHeight :: Int
    , commentSort :: String
    , linkSort :: String
+   , pageComments :: Bool
    }

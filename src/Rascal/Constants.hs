@@ -44,4 +44,5 @@ defaultConf = [
      ("subreddit", "haskell")
    , ("linkSort", "new")
    , ("commentSort", "new")
+   , ("pageComments", "true")
    ]
