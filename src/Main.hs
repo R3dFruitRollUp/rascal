@@ -242,7 +242,7 @@ loop l = do
          list <- liftIO $ getListing (linkSort conf) subreddit 0 ""
          displayListing list
          loop list
-      'm' -> do   -- ^ FIXME if current listing under 25 do nothing
+      'm' -> do   -- ^ TODO if current listing has "null" after, do nothing
          let subreddit = takeWhile (/= ' ') (name l)
              sort = drop 4 (dropWhile (/= ' ') (name l))
              cnt = count l + 25
