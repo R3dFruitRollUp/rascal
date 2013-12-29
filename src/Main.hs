@@ -86,10 +86,11 @@ displayListing l = do
       displayCommands w
 
 -- |get posts according to selection in argument's subreddit as a listing
-getListing :: String -> String -> IO NamedListing
-getListing select subreddit =
-   let apiurl = "http://www.reddit.com/r/" ++ subreddit ++ "/%s.json"
-   in NamedListing (subreddit ++ " -- " ++ select) <$>
+getListing :: String -> String -> Int -> String -> IO NamedListing
+getListing select subreddit cnt after =
+   let apiurl = "http://www.reddit.com/r/" ++ subreddit ++ "/%s.json?count="
+                ++ show cnt ++ after
+   in NamedListing (subreddit ++ " -- " ++ select) cnt <$>
       getThing apiurl select emptyListing
 
 -- |get posts or comments from an apiurl, a sort order and a default in case
@@ -115,7 +116,7 @@ handleCurlAesonException x e = do
 
 -- |open nth link in a listing in given width
 open :: NamedListing -> Int -> ReaderT RuntimeConf IO ()
-open nl@(NamedListing _ (Listing l)) n = do
+open nl@(NamedListing _ _ (Listing l)) n = do
    conf <- ask
    -- n >= 0 by construction on call of open, but...
    when (0 <= n && n < length l) $
@@ -217,13 +218,14 @@ main = do
        pComments' | null pComments = True    -- ^ TODO get from defaultConf
                   | otherwise = fst $ head pComments
        conf' = RuntimeConf width height cSort lSort pComments'
-   list <- getListing lSort subreddit
+   list <- getListing lSort subreddit 0 ""
    runReaderT (displayListing list >> loop list) conf'
 
 -- |show possible commands
 displayCommands :: Int -> IO ()
 displayCommands =
-   message $ intercalate "/" (map makeCmd availableSorts) ++ "/⟨s⟩witch subreddit/open ⟨A-Y⟩"
+   message $ intercalate "/" (map makeCmd availableSorts) ++
+      "/⟨m⟩ore links/⟨s⟩witch subreddit/open ⟨A-Y⟩"
 
 -- |main event loop
 loop :: NamedListing -> ReaderT RuntimeConf IO ()
@@ -237,13 +239,22 @@ loop l = do
             putStr "\nsubreddit to switch to: "
             hFlush stdout
             getLine
-         list <- liftIO $ getListing (linkSort conf) subreddit
+         list <- liftIO $ getListing (linkSort conf) subreddit 0 ""
+         displayListing list
+         loop list
+      'm' -> do   -- ^ FIXME if current listing under 25 do nothing
+         let subreddit = takeWhile (/= ' ') (name l)
+             sort = drop 4 (dropWhile (/= ' ') (name l))
+             cnt = count l + 25
+             Listing ls = listing l
+             after = "&after=" ++ uid (last ls)
+         list <- liftIO $ getListing sort subreddit cnt after
          displayListing list
          loop list
       -- is this one of the sort options?
       x | isJust (getFullSort x) -> do
          list <- let (Just sort) = getFullSort x
-                in liftIO $ getListing sort $ takeWhile (/=' ') $ name l
+                in liftIO $ getListing sort (takeWhile (/=' ') (name l)) 0 ""
          displayListing list
          loop list
       -- 25 elements displayed max

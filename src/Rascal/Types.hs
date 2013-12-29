@@ -29,9 +29,10 @@ newtype Listing = Listing [Link]
 emptyListing :: Listing
 emptyListing = Listing []
 
-data NamedListing = NamedListing {
-   name :: String,
-   listing :: Listing
+data NamedListing = NamedListing
+   { name :: String
+   , count :: Int
+   , listing :: Listing
 }
 
 newtype Comments = Comments [CommentListing] deriving (Show)
