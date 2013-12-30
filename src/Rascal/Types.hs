@@ -24,10 +24,13 @@ data Link = Link {
    selfText :: String
 }
 
-newtype Listing = Listing [Link]
+data Listing = Listing
+   { links :: [Link]
+   , after :: Maybe String
+   }
 
 emptyListing :: Listing
-emptyListing = Listing []
+emptyListing = Listing [] Nothing
 
 data NamedListing = NamedListing
    { name :: String
@@ -76,6 +79,7 @@ instance FromJSON Listing where
    parseJSON (Object o) = do
       datum <- o .: "data"
       Listing <$> datum .: "children"
+              <*> datum .: "after"
    parseJSON _ = empty
 
 -- |json parser for 'Comments'

@@ -46,10 +46,10 @@ showLink l width =
 -- TODO test
 showListing :: NamedListing -> Int -> String
 showListing l width =
-   let (Listing links) = listing l
+   let lnks = links $ listing l
    in bold ++ "\n--=| /r/" ++ name l ++ " |=--\n\n" ++ reset ++
       -- the -4 comes from letterizeLines
-      letterizeLines (map (`showLink` (width - 4)) links)
+      letterizeLines (map (`showLink` (width - 4)) lnks)
 
 -- TODO test
 showComment :: Int -> String -> String -> String -> String -> Comment -> [String]
@@ -86,10 +86,10 @@ displayListing l = do
       displayCommands w
 
 -- |get posts according to selection in argument's subreddit as a listing
-getListing :: String -> String -> Int -> String -> IO NamedListing
-getListing select subreddit cnt after =
+getListing :: String -> String -> Int -> Maybe String -> IO NamedListing
+getListing select subreddit cnt aftr =
    let apiurl = "http://www.reddit.com/r/" ++ subreddit ++ "/%s.json?count="
-                ++ show cnt ++ after
+                ++ show cnt ++ maybe "" ("&after=" ++) aftr
    in NamedListing (subreddit ++ " -- " ++ select) cnt <$>
       getThing apiurl select emptyListing
 
@@ -116,7 +116,7 @@ handleCurlAesonException x e = do
 
 -- |open nth link in a listing in given width
 open :: NamedListing -> Int -> ReaderT RuntimeConf IO ()
-open nl@(NamedListing _ _ (Listing l)) n = do
+open nl@(NamedListing _ _ (Listing l _)) n = do
    conf <- ask
    -- n >= 0 by construction on call of open, but...
    when (0 <= n && n < length l) $
@@ -218,7 +218,7 @@ main = do
        pComments' | null pComments = True    -- ^ TODO get from defaultConf
                   | otherwise = fst $ head pComments
        conf' = RuntimeConf width height cSort lSort pComments'
-   list <- getListing lSort subreddit 0 ""
+   list <- getListing lSort subreddit 0 Nothing
    runReaderT (displayListing list >> loop list) conf'
 
 -- |show possible commands
@@ -239,22 +239,25 @@ loop l = do
             putStr "\nsubreddit to switch to: "
             hFlush stdout
             getLine
-         list <- liftIO $ getListing (linkSort conf) subreddit 0 ""
+         list <- liftIO $ getListing (linkSort conf) subreddit 0 Nothing
          displayListing list
          loop list
-      'm' -> do   -- ^ TODO if current listing has "null" after, do nothing
-         let subreddit = takeWhile (/= ' ') (name l)
-             sort = drop 4 (dropWhile (/= ' ') (name l))
-             cnt = count l + 25
-             Listing ls = listing l
-             after = "&after=" ++ uid (last ls)
-         list <- liftIO $ getListing sort subreddit cnt after
-         displayListing list
-         loop list
+      'm' -> if isJust (after (listing l))
+            then do
+               let subreddit = takeWhile (/= ' ') (name l)
+                   sort = drop 4 (dropWhile (/= ' ') (name l))
+                   cnt = count l + length (links (listing l))
+                   aftr = after $ listing l
+               list <- liftIO $ getListing sort subreddit cnt aftr
+               displayListing list
+               loop list
+            else do
+               liftIO $ message "no more posts…" (textWidth conf)
+               loop l
       -- is this one of the sort options?
       x | isJust (getFullSort x) -> do
          list <- let (Just sort) = getFullSort x
-                in liftIO $ getListing sort (takeWhile (/=' ') (name l)) 0 ""
+                in liftIO $ getListing sort (takeWhile (/=' ') (name l)) 0 Nothing
          displayListing list
          loop list
       -- 25 elements displayed max
