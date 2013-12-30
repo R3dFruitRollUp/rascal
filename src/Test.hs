@@ -1,6 +1,6 @@
 module Main where
 
-import Data.List                 (elemIndices, findIndices, union)
+import Data.List                 (elemIndices, findIndices, union, isPrefixOf)
 import Test.Tasty
 import Test.Tasty.QuickCheck     (testProperty)
 import Test.Tasty.HUnit
@@ -33,6 +33,10 @@ properties = testGroup "Invariants checked with QuickCheck"
       prop_cleanUpLines
    , testProperty "cleanUp only replaces spaces by newlines"
       prop_cleanUpSpacesToLines
+   , testProperty "indentLines keeps lines under width"
+      prop_indentStringHasWidth
+   , testProperty "indentLines properly adds prefix"
+      prop_indentStringInsertsPrefix
    ]
 
 prop_letterizedLinesUnlines :: Lines -> Property
@@ -77,6 +81,16 @@ prop_cleanUpSpacesToLines wl =
    -- | if there are HTML entities to be escaped, it will introduce a shift
    in unescape s == s ==>
       findIndices (`elem` " \n") (cleanUp s l) == findIndices (`elem` " \n") s
+
+prop_indentStringHasWidth :: Int -> String -> String -> Property
+prop_indentStringHasWidth w prefix s =
+   length prefix < w ==>
+      all (\l -> length l <= w) $ lines (indentString w prefix s)
+
+prop_indentStringInsertsPrefix :: Int -> String -> String -> Property
+prop_indentStringInsertsPrefix w p s =
+   length p < w && '\n' `notElem` p ==>
+      all (isPrefixOf p) $ lines (indentString w p s)
 
 unitTests :: TestTree
 unitTests = testGroup "Unit tests" [unescapeTests, hrefsTests, parseConfigTests]

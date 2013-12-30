@@ -30,7 +30,6 @@ import Rascal.Types
 import Rascal.Conf
 
 -- we do not use Show because we depend on (an IO generated) width
--- TODO test
 showLink :: Link -> Int -> String
 showLink l width =
    let titlewidth = width - 34
@@ -43,7 +42,6 @@ showLink l width =
    in printf format color (score l) self reset (title l) (author l)
       magenta (numComments l) reset
 
--- TODO test
 showListing :: NamedListing -> Int -> String
 showListing l width =
    let lnks = links $ listing l
@@ -51,7 +49,6 @@ showListing l width =
       -- the -4 comes from letterizeLines
       letterizeLines (map (`showLink` (width - 4)) lnks)
 
--- TODO test
 showComment :: Int -> String -> String -> String -> String -> Comment -> [String]
 showComment width prefix addedPrefix futurePrefix op
    (Comment cauthor ups downs _ body children) =
@@ -68,7 +65,6 @@ showComment width prefix addedPrefix futurePrefix op
 showComment _ _ _ _ _ OriginalArticle =
    []
 
--- TODO test
 showCommentListing :: Int -> String -> String -> CommentListing -> [String]
 showCommentListing width prefix op (CommentListing cl) =
    case cl of
