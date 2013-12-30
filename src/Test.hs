@@ -1,5 +1,6 @@
 module Main where
 
+import Data.List                 (elemIndices, findIndices, union)
 import Test.Tasty
 import Test.Tasty.QuickCheck     (testProperty)
 import Test.Tasty.HUnit
@@ -28,6 +29,10 @@ properties = testGroup "Invariants checked with QuickCheck"
       prop_letterizedLinesUnlines
    , testProperty "letterizeLines adds 4 chars per line"
       prop_letterizedLinesLength
+   , testProperty "cleanUp only add lines"
+      prop_cleanUpLines
+   , testProperty "cleanUp only replaces spaces by newlines"
+      prop_cleanUpSpacesToLines
    ]
 
 prop_letterizedLinesUnlines :: Lines -> Property
@@ -38,6 +43,40 @@ prop_letterizedLinesUnlines (Lines l) =
 prop_letterizedLinesLength :: Lines -> Bool
 prop_letterizedLinesLength (Lines l) =
    length (head l) + 4 == length (head (lines (letterizeLines l)))
+
+data WordList = WordList
+   { wrds :: String
+   , len :: Int
+   } deriving (Show)
+
+instance Arbitrary WordList where
+   arbitrary = do
+      Lines w <- arbitrary
+      -- |don't want words that span the entire line length
+      l <- choose (maximum (map length w) + 1, 200)
+      return $ WordList (toStrLn w) l
+
+toStrLn :: [String] -> String
+toStrLn wl =
+   unwords wl ++ "\n"
+
+prop_cleanUpLines :: WordList -> Property
+prop_cleanUpLines wl =
+   let s = wrds wl
+       l = len wl
+       initialNewLines = elemIndices '\n' s
+       cleanedNewLines = elemIndices '\n' (cleanUp s l)
+   -- | if there are HTML entities to be escaped, it will introduce a shift
+   in unescape s == s ==>
+      cleanedNewLines `union` initialNewLines == cleanedNewLines
+
+prop_cleanUpSpacesToLines :: WordList -> Property
+prop_cleanUpSpacesToLines wl =
+   let s = wrds wl
+       l = len wl
+   -- | if there are HTML entities to be escaped, it will introduce a shift
+   in unescape s == s ==>
+      findIndices (`elem` " \n") (cleanUp s l) == findIndices (`elem` " \n") s
 
 unitTests :: TestTree
 unitTests = testGroup "Unit tests" [unescapeTests, hrefsTests, parseConfigTests]

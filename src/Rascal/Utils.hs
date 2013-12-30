@@ -52,6 +52,7 @@ indentString width prefix s =
 
 -- |split a string to a list of substring of length <= n
 splitAt' :: Int -> String -> [String]
+splitAt' 0 s = [s]
 splitAt' n s =
    let (s1, s2) = splitAt n s
    in if null s2
