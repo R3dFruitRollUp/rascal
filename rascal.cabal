@@ -19,6 +19,8 @@ category:            Web
 build-type:          Simple
 extra-source-files:  README.md, screenshot.png, threads.png
 cabal-version:       >=1.10
+stability:           experimental
+homepage:            http://soli.github.io/rascal/
 
 source-repository head
   type:              git
