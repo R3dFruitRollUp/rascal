@@ -1,8 +1,5 @@
 name:                rascal
 
--- The package version.  See the Haskell package versioning policy (PVP) 
--- for standards guiding when and how versions should be incremented.
--- http://www.haskell.org/haskellwiki/Package_versioning_policy
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
@@ -21,6 +18,11 @@ extra-source-files:  README.md, screenshot.png, threads.png
 cabal-version:       >=1.10
 stability:           experimental
 homepage:            http://soli.github.io/rascal/
+
+source-repository this
+  type:              git
+  location:          git://github.com/soli/rascal.git
+  tag:               v1.1.4
 
 source-repository head
   type:              git
