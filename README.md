@@ -38,13 +38,13 @@ pageComments = True
 ```
 
 Here is what rascal looks like when started, and when a _self_ link (marked
-with a '♦') is chosen (`A` was pressed in this case). Non-self links and links
+with a '♦') is chosen (`N` was pressed in this case). Non-self links and links
 detected in posts will be opened in your default browser.
 
 ![screenshot](https://github.com/soli/rascal/raw/master/screenshot.png)
 
 Comments are shown threaded, with the order defined in the configuration file
-(defaulting to "new"), and one page at a time if `pageComments` is true
+(defaulting to `new`), and one page at a time if `pageComments` is true
 (default). Comments, like posts, are formatted to avoid cutting words when
 possible.
 
