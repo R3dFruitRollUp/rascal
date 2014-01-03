@@ -43,14 +43,28 @@ detected in posts will be opened in your default browser.
 
 ![screenshot](https://github.com/soli/rascal/raw/master/screenshot.png)
 
+Comments are shown threaded, with the order defined in the configuration file
+(defaulting to "new"), and one page at a time if `pageComments` is true
+(default). Comments, like posts, are formatted to avoid cutting words when
+possible.
+
+![threads](https://github.com/soli/rascal/raw/master/threads.png)
+
 ### Notes
 
 In case you wonder, my iTerm2 is using the dark
 [solarized](https://github.com/altercation/solarized) color scheme. The ASCII
-title was generated with `figlet -f chunky`.
+title was generated with `figlet -f chunky`. And the name comes from my own
+pronunciation of `/r/haskell`.
+
+### Planned Features
+
+* Configuration for colors
+* OAuth2 login to reddit (subscribed/saved/etc.)
+* more tests
 
 ## Disclaimer
 
 Please note that rascal is my first Haskell project. As such, it is as much a
-fun experiment for me to discover the ecosystem and the idiodms, than a really
+fun experiment for me to discover the ecosystem and the idioms, than a really
 useful project. TL;DR: YMMV.

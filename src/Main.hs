@@ -162,7 +162,7 @@ openComments subreddit ln = do
 
 doPageComments :: Int -> Int -> Int -> [String] -> IO ()
 doPageComments _ _ _ [] = return ()
-doPageComments _ _ _ [_] = return ()   -- ^ should not happen...
+doPageComments _ _ _ [_] = return ()   -- should never happen...
 doPageComments height shown w allComments@(a:b:remaining)
    | shown > height = waitKey w >> doPageComments height 0 w allComments
    | otherwise = do
@@ -211,7 +211,7 @@ main = do
        lSort  = conf ! "linkSort"
        cSort  = conf ! "commentSort"
        pComments = reads (conf ! "pageComments")
-       pComments' | null pComments = True    -- ^ TODO get from defaultConf
+       pComments' | null pComments = True    -- TODO get from defaultConf
                   | otherwise = fst $ head pComments
        conf' = RuntimeConf width height cSort lSort pComments'
    list <- getListing lSort subreddit 0 Nothing

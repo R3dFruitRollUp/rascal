@@ -51,5 +51,5 @@ getUserConfig fileName defaultOptions = do
    let userConfFile = home </> fileName
        defaultConf = fromList defaultOptions
    handle (\(_ :: IOError) -> return defaultConf) $
-      -- |union will take left over right if key is defined twice
+      -- union will take left over right if key is defined twice
       liftM ((`union` defaultConf) . parseConfig) (readFile userConfFile)
