@@ -30,8 +30,12 @@
 
       </header>
       <section>
-        <h1>
-<a name="rascal" class="anchor" href="#rascal"><span class="octicon octicon-link"></span></a>rascal</h1>
+        <pre><code>                              __ 
+.----.---.-.-----.----.---.-.|  |
+|   _|  _  |__ --|  __|  _  ||  |
+|__| |___._|_____|____|___._||__|
+
+</code></pre>
 
 <p><a href="https://travis-ci.org/soli/rascal"><img src="https://travis-ci.org/soli/rascal.png" alt="Build Status"></a></p>
 
@@ -52,21 +56,50 @@ command line</p>
 <pre><code>$ rascal python
 </code></pre>
 
-<p>Here is what rascal looks like when started, and when a <em>self</em> link is chosen
-(<code>A</code> was pressed in this case). Non-self links and links detected in posts
-will be opened in your default browser.</p>
+<p>It is also possible to define the default subreddit and the default sort
+option in an INI-style configuration file named <code>.rascalrc</code> in your HOME
+directory. For instance, it might contain the following (case-sensitive!):</p>
 
-<p><img src="https://github.com/soli/rascal/raw/master/screenshot.png" alt="screenщhot"></p>
+<pre><code>subreddit: programming
+linkSort = controversial
+commentSort: new
+pageComments = True
+</code></pre>
 
-<p>(in case you wonder, my iTerm2 is using the dark
-<a href="https://github.com/altercation/solarized">solarized</a> color scheme.)</p>
+<p>Here is what rascal looks like when started, and when a <em>self</em> link (marked
+with a '♦') is chosen (<code>N</code> was pressed in this case). Non-self links and links
+detected in posts will be opened in your default browser.</p>
 
-<h2>
+<p><img src="https://github.com/soli/rascal/raw/master/screenshot.png" alt="screenshot"></p>
+
+<p>Comments are shown threaded, with the order defined in the configuration file
+(defaulting to <code>new</code>), and one page at a time if <code>pageComments</code> is true
+(default). Comments, like posts, are formatted to avoid cutting words when
+possible.</p>
+
+<p><img src="https://github.com/soli/rascal/raw/master/threads.png" alt="threads"></p>
+
+<h3>
+<a name="notes" class="anchor" href="#notes"><span class="octicon octicon-link"></span></a>Notes</h3>
+
+<p>In case you wonder, my iTerm2 is using the dark
+<a href="https://github.com/altercation/solarized">solarized</a> color scheme. The ASCII
+title was generated with <code>figlet -f chunky</code>. And the name comes from my own
+pronunciation of <code>/r/haskell</code>.</p>
+
+<h3>
+<a name="planned-features" class="anchor" href="#planned-features"><span class="octicon octicon-link"></span></a>Planned Features</h3>
+
+<ul>
+<li>Configuration for colors</li>
+<li>OAuth2 login to reddit (subscribed/saved/etc.)</li>
+<li>more tests</li>
+</ul><h2>
 <a name="disclaimer" class="anchor" href="#disclaimer"><span class="octicon octicon-link"></span></a>Disclaimer</h2>
 
 <p>Please note that rascal is my first Haskell project. As such, it is as much a
-fun experiment for me to discover the ecosystem and the idiodms, than it is a
-really useful project. TL;DR: YMMV.</p>
+fun experiment for me to discover the ecosystem and the idioms, than a really
+useful project. TL;DR: YMMV.</p>
       </section>
       <footer>
         <p><small>Hosted on <a href="http://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
