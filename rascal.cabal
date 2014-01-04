@@ -3,7 +3,7 @@ name:                rascal
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             1.1.4
+version:             1.1.5
 synopsis:            A command-line client for Reddit
 description:         Rascal is a command-line client for Reddit with colors,
                      configurable sorting, threaded comments, and some day
@@ -22,7 +22,7 @@ homepage:            http://soli.github.io/rascal/
 source-repository this
   type:              git
   location:          git://github.com/soli/rascal.git
-  tag:               v1.1.4
+  tag:               v1.1.5
 
 source-repository head
   type:              git

@@ -4,7 +4,9 @@ module Rascal.Utils where
 import System.Info         (os)
 import Control.Exception   (handle)
 import Data.List           (elemIndices)
+import System.Environment  (getEnv)
 
+import System.Directory    (findExecutable)
 import System.Process      (callProcess)
 import System.Console.ANSI (clearLine)
 
@@ -101,7 +103,12 @@ openUrl u w = do
    handle (\e -> print (e :: IOError)) $
       case os of
        "darwin"  -> callProcess "open" ["-g", u]   -- open in the background
-       "linux"   -> callProcess "xdg-open" [u]     -- getEnv BROWSER ???
+       "linux"   -> do
+         hasXdg <- findExecutable "xdg-open"
+         cmd <- case hasXdg of
+                  Nothing -> getEnv "BROWSER"
+                  Just path -> return path
+         callProcess cmd [u]
        "mingw32" -> callProcess "start" ["", u]
        _         -> return ()
 
