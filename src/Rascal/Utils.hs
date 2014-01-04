@@ -100,8 +100,8 @@ openUrl u w = do
    message ("opening '" ++ u ++ "'…") w
    handle (\e -> print (e :: IOError)) $
       case os of
-       "darwin"  -> callProcess "open" ["-g", u] -- open in the background
-       "linux"   -> callProcess "xdg-open" [u, "&"] -- getEnv BROWSER ???
+       "darwin"  -> callProcess "open" ["-g", u]   -- open in the background
+       "linux"   -> callProcess "xdg-open" [u]     -- getEnv BROWSER ???
        "mingw32" -> callProcess "start" ["", u]
        _         -> return ()
 
