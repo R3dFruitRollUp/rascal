@@ -7,19 +7,13 @@
 import Control.Monad          (when, unless)
 import Control.Monad.Reader   (ReaderT, ask, runReaderT)
 import Control.Monad.Trans    (liftIO)
-import Control.Applicative    ((<$>))
 import Text.Printf            (printf)
 import System.Environment     (getArgs)
 import Data.Char              (ord)
 import Data.List              (intercalate, elemIndices)
 import Data.Maybe             (isJust)
 import System.IO
-import Control.Exception      (handle)
 
-import Data.Aeson             (parseJSON, FromJSON)
-import Network.Curl.Aeson     (curlAeson, noData, CurlAesonException, errorMsg, curlCode)
-import Network.Curl.Opts      (CurlOption(CurlUserAgent))
-import Network.Curl.Code      (CurlCode(CurlOK))
 import System.Process         (readProcess)
 import System.Console.ANSI    (clearLine)
 import Data.Map               ((!))
@@ -28,6 +22,7 @@ import Rascal.Constants
 import Rascal.Utils
 import Rascal.Types
 import Rascal.Conf
+import Rascal.API
 
 -- we do not use Show because we depend on (an IO generated) width
 showLink :: Link -> Int -> String
@@ -81,34 +76,6 @@ displayListing l = do
       putStrLn $ showListing l w
       displayCommands w
 
--- |get posts according to selection in argument's subreddit as a listing
-getListing :: String -> String -> Int -> Maybe String -> IO NamedListing
-getListing select subreddit cnt aftr =
-   let apiurl = "http://www.reddit.com/r/" ++ subreddit ++ "/%s.json?count="
-                ++ show cnt ++ maybe "" ("&after=" ++) aftr
-   in NamedListing (subreddit ++ " -- " ++ select) cnt <$>
-      getThing apiurl select emptyListing
-
--- |get posts or comments from an apiurl, a sort order and a default in case
--- of error
-getThing :: FromJSON a => String -> String -> a -> IO a
-getThing apiurl sort emptyThing =
-   let sort' = if sort `notElem` map snd availableSorts
-               then snd . head $ availableSorts
-               else sort
-       apiurl' = printf apiurl sort'
-   in handle (handleCurlAesonException emptyThing) $ do
-      l <- curlAeson parseJSON "GET" apiurl' [CurlUserAgent userAgent] noData
-      return $! l
-
--- |print error message if there is a cURL exception
-handleCurlAesonException :: a -> CurlAesonException -> IO a
-handleCurlAesonException x e = do
-   putStrLn $ red ++ "Caught exception: " ++ reset ++ errorMsg e
-   putStrLn $ if curlCode e == CurlOK
-              then "(Might indicate a non-existing subreddit)"
-              else "cURL code: " ++ (drop 4 . show . curlCode) e
-   return x
 
 -- |open nth link in a listing in given width
 open :: NamedListing -> Int -> ReaderT RuntimeConf IO ()
@@ -179,13 +146,6 @@ doPageComments height shown w allComments@(a:b:remaining)
       putStrLn a
       putStrLn b
       doPageComments height (shown' + nbLines) w remaining
-
--- |request comments for a given article
-getComments :: String -> String -> String -> IO Comments
-getComments subreddit article csort =
-   let apiurl = "http://www.reddit.com/r/" ++ subreddit ++
-                "/comments/" ++ article ++ ".json?sort=%s"
-   in getThing apiurl csort emptyComments
 
 -- |open requested hrefs as urls and stop if anything else
 openRefs :: [String] -> Int -> IO ()
