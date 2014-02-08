@@ -181,12 +181,13 @@ main = do
 displayCommands :: Int -> IO ()
 displayCommands =
    message $ intercalate "/" (map makeCmd availableSorts) ++
-      "/⟨m⟩ore links/⟨s⟩witch subreddit/open ⟨A-Y⟩"
+      "/⟨m⟩ore links/⟨s⟩witch subreddit/open ⟨A-Y⟩/⟨q⟩uit"
 
 -- |main event loop
 loop :: NamedListing -> ReaderT RuntimeConf IO ()
 loop l = do
    cmd <- liftIO getChar
+   liftIO $ putStr "\b"
    liftIO clearLine
    conf <- ask
    case cmd of
@@ -220,4 +221,5 @@ loop l = do
         | x `elem` ['A'..'Y'] -> do
          open l (ord x - ord 'A')
          loop l
-      _ -> return ()
+      'q' -> return ()
+      _ -> loop l
