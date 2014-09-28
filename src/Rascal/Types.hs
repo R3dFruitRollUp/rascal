@@ -116,4 +116,5 @@ data RuntimeConf = RuntimeConf
    , commentSort :: String
    , linkSort :: String
    , pageComments :: Bool
+   , userAgent :: String
    }
