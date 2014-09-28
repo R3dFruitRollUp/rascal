@@ -174,7 +174,7 @@ main = do
        pComments = reads (conf ! "pageComments")
        pComments' | null pComments = True    -- TODO get from defaultConf
                   | otherwise = fst $ head pComments
-       conf' = RuntimeConf width height cSort lSort pComments'
+       conf' = RuntimeConf width height cSort lSort pComments' uAgent
    list <- getListing lSort subreddit 0 Nothing uAgent
    runReaderT (displayListing list >> loop list) conf'
 
