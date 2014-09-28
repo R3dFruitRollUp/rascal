@@ -7,10 +7,6 @@ import System.Console.ANSI
 
 import Paths_rascal        (version)
 
--- |user_agent for cURL built with version string
-userAgent :: String
-userAgent = "rascal/" ++ showVersion version ++ " by soli"
-
 -- |colors and more
 red :: String
 red  = setSGRCode [SetColor Foreground Dull Red]
@@ -45,4 +41,5 @@ defaultConf = [
    , ("linkSort", "new")
    , ("commentSort", "new")
    , ("pageComments", "true")
+   , ("userAgent", "rascal/" ++ showVersion version ++ " by soli")
    ]

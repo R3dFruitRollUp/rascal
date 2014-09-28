@@ -117,7 +117,7 @@ openComments subreddit ln = do
    let w = textWidth conf
        csort = commentSort conf
    when (numComments ln > 0) $ liftIO $ do
-      (Comments cll) <- getComments subreddit (drop 3 (uid ln)) csort
+      (Comments cll) <- getComments subreddit (drop 3 (uid ln)) csort (userAgent conf)
       putStrLn ""
        -- the first is OriginalArticle, the length is always 2
       unless (null cll) $ do
@@ -170,11 +170,12 @@ main = do
                  | otherwise = head args
        lSort  = conf ! "linkSort"
        cSort  = conf ! "commentSort"
+       uAgent = conf ! "userAgent"
        pComments = reads (conf ! "pageComments")
        pComments' | null pComments = True    -- TODO get from defaultConf
                   | otherwise = fst $ head pComments
        conf' = RuntimeConf width height cSort lSort pComments'
-   list <- getListing lSort subreddit 0 Nothing
+   list <- getListing lSort subreddit 0 Nothing uAgent
    runReaderT (displayListing list >> loop list) conf'
 
 -- |show possible commands
@@ -196,7 +197,7 @@ loop l = do
             putStr "\nsubreddit to switch to: "
             hFlush stdout
             getLine
-         list <- liftIO $ getListing (linkSort conf) subreddit 0 Nothing
+         list <- liftIO $ getListing (linkSort conf) subreddit 0 Nothing (userAgent conf)
          displayListing list
          loop list
       'm' -> if isJust (after (listing l))
@@ -205,7 +206,7 @@ loop l = do
                    sort = drop 4 (dropWhile (/= ' ') (name l))
                    cnt = count l + length (links (listing l))
                    aftr = after $ listing l
-               list <- liftIO $ getListing sort subreddit cnt aftr
+               list <- liftIO $ getListing sort subreddit cnt aftr (userAgent conf)
                displayListing list
                loop list
             else do
@@ -214,7 +215,7 @@ loop l = do
       -- is this one of the sort options?
       x | isJust (getFullSort x) -> do
          list <- let (Just sort) = getFullSort x
-                in liftIO $ getListing sort (takeWhile (/=' ') (name l)) 0 Nothing
+                in liftIO $ getListing sort (takeWhile (/=' ') (name l)) 0 Nothing (userAgent conf)
          displayListing list
          loop list
       -- 25 elements displayed max
